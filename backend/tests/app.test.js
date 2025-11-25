@@ -2,6 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
@@ -10,18 +11,17 @@ import notFound from '../src/middlewares/notFound.js';
 import errorHandler from '../src/middlewares/errorHandler.js';
 import { connectDB } from '../src/db/index.js';
 
-// 테스트용 기본 환경 변수 설정
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID || 'dummy-client';
 process.env.KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI || 'http://localhost/callback';
 process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/versionflow_test';
 
-// 테스트용 앱 구성 (server.js와 동일한 미들웨어/라우트)
 function createApp() {
   const app = express();
   app.use(helmet());
   app.use(express.json({ limit: '3mb' }));
   app.use(morgan('dev'));
+  app.use(cookieParser());
   app.get('/health', (req, res) => res.json({ ok: true }));
   app.use('/api', router);
   app.use(notFound);
@@ -34,7 +34,6 @@ const app = createApp();
 beforeAll(async () => {
   await connectDB();
   await mongoose.connection.db.dropDatabase();
-  // 업로드 테스트용 파일 생성
   const fixtureDir = path.join(process.cwd(), 'tests', 'fixtures');
   fs.mkdirSync(fixtureDir, { recursive: true });
   fs.writeFileSync(path.join(fixtureDir, 'sample.txt'), 'hello upload');
@@ -45,18 +44,24 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-describe('E2E API', () => {
+describe('E2E API (cookie-based auth)', () => {
   const ids = {
     ownerId: new mongoose.Types.ObjectId().toString(),
     authorId: new mongoose.Types.ObjectId().toString(),
     initiatorId: new mongoose.Types.ObjectId().toString()
   };
   let accessToken;
+  let refreshToken;
   let projectId;
   let fileId;
   let versionId;
   let invitationId;
   const uploadPath = path.join(process.cwd(), 'tests', 'fixtures', 'sample.txt');
+
+  const cookieHeader = () => [
+    `accessToken=${accessToken}`,
+    refreshToken ? `refreshToken=${refreshToken}` : null
+  ].filter(Boolean);
 
   test('GET /health', async () => {
     const res = await request(app).get('/health');
@@ -74,11 +79,11 @@ describe('E2E API', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.data.user.kakaoId).toBe('kakao-e2e-1');
-    expect(res.body.data.tokens.accessToken).toBeDefined();
     accessToken = res.body.data.tokens.accessToken;
+    refreshToken = res.body.data.tokens.refreshToken;
   });
 
-  test('토큰 없이 보호된 라우트 접근 시 401', async () => {
+  test('토큰 없이 보호 라우트 접근 시 401', async () => {
     const res = await request(app).get('/api/projects');
     expect(res.status).toBe(401);
   });
@@ -86,7 +91,7 @@ describe('E2E API', () => {
   test('POST /api/projects 프로젝트 생성', async () => {
     const res = await request(app)
       .post('/api/projects')
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({ name: 'Project One', ownerId: ids.ownerId, description: 'E2E project' });
     expect(res.status).toBe(201);
     projectId = res.body.data._id || res.body.data.id;
@@ -96,7 +101,7 @@ describe('E2E API', () => {
   test('POST /api/projects/:projectId/files 파일 추가', async () => {
     const res = await request(app)
       .post(`/api/projects/${projectId}/files`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({ projectId, path: '/docs/readme.md' });
     expect(res.status).toBe(201);
     fileId = res.body.data._id || res.body.data.id;
@@ -106,7 +111,7 @@ describe('E2E API', () => {
   test('POST /api/versions 버전(커밋) 생성', async () => {
     const res = await request(app)
       .post('/api/versions')
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({
         projectId,
         fileId,
@@ -124,7 +129,7 @@ describe('E2E API', () => {
   test('POST /api/versions/:id/approvals 승인 추가', async () => {
     const res = await request(app)
       .post(`/api/versions/${versionId}/approvals`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({ userId: ids.ownerId, decision: 'approve', comment: 'LGTM' });
     expect(res.status).toBe(200);
     expect(res.body.data.review.approvals.length).toBe(1);
@@ -133,7 +138,7 @@ describe('E2E API', () => {
   test('POST /api/versions/:id/status 상태 변경', async () => {
     const res = await request(app)
       .post(`/api/versions/${versionId}/status`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({ status: 'approved' });
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('approved');
@@ -142,7 +147,7 @@ describe('E2E API', () => {
   test('POST /api/invitations 초대 생성', async () => {
     const res = await request(app)
       .post('/api/invitations')
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({
         projectId,
         inviterId: ids.ownerId,
@@ -156,7 +161,7 @@ describe('E2E API', () => {
   test('POST /api/invitations/:id/respond 초대 응답', async () => {
     const res = await request(app)
       .post(`/api/invitations/${invitationId}/respond`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({ decision: 'accepted' });
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('accepted');
@@ -165,7 +170,7 @@ describe('E2E API', () => {
   test('POST /api/rollbacks 롤백 기록 생성', async () => {
     const res = await request(app)
       .post('/api/rollbacks')
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({
         projectId,
         targetCommitId: 'commit-123',
@@ -179,7 +184,7 @@ describe('E2E API', () => {
   test('POST /api/projects/:projectId/previews 미리보기 생성', async () => {
     const res = await request(app)
       .post(`/api/projects/${projectId}/previews`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .send({
         projectId,
         fileId,
@@ -193,7 +198,7 @@ describe('E2E API', () => {
   test('POST /api/projects/:projectId/upload 파일 업로드 및 커밋', async () => {
     const res = await request(app)
       .post(`/api/projects/${projectId}/upload`)
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', cookieHeader())
       .field('authorId', ids.authorId)
       .field('message', 'upload commit')
       .field('folderPath', '/uploads')
