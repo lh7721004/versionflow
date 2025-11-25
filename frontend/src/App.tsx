@@ -165,18 +165,19 @@ export default function App() {
     return user.name || user.email || '';
   }, [userData]);
 
-  if (isUserLoading) return null;
-  if (isUserError || !userData) {
-    if (location.pathname !== '/login') {
-      navigate('/login');
-      return null;
-    }
+  if (location.pathname === '/login') {
     return (
       <>
         <LoginPage onKakaoLogin={handleLogin} onGoogleLogin={handleGoogleLogin} />
         <Toaster />
       </>
     );
+  }
+
+  if (isUserLoading) return null;
+  if (isUserError || !userData) {
+    navigate('/login');
+    return null;
   }
 
   // -----------------------
