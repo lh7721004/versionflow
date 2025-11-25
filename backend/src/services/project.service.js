@@ -26,6 +26,18 @@ export class ProjectService {
     return this.repo.list(params);
   }
 
+  async listByUser(userId, params) {
+    return this.repo.listByUser(userId, params);
+  }
+
+  async listOwned(userId, params) {
+    return this.repo.listOwned(userId, params);
+  }
+
+  async listMember(userId, params) {
+    return this.repo.listMember(userId, params);
+  }
+
   async update(id, patch) {
     const updated = await this.repo.updateById(id, patch);
     if (!updated) throw new ApiError(404, 'Project not found');

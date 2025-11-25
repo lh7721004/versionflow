@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
+import { useProjects } from '../queries/useProject';
 
 interface DashboardProps {
   onNavigateToProject: (projectId: string) => void;
@@ -39,6 +40,7 @@ interface Document {
 export function Dashboard({ onNavigateToProject }: DashboardProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const { data: projectData, isLoading: isProjectLoading, isError: isProjectError } = useProjects({limit:0,offset:0});
 
   const documents: Document[] = [
     {
@@ -114,6 +116,9 @@ export function Dashboard({ onNavigateToProject }: DashboardProps) {
         );
     }
   };
+  useEffect(()=>{
+    console.log(projectData);
+  },[projectData])
 
   return (
     <div className="p-8 space-y-6">

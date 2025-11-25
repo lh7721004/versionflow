@@ -11,6 +11,7 @@ import {
 import validate from '../middlewares/validate.js';
 import { uploadFileAndCommit } from '../controllers/upload.controller.js';
 import { uploadSingle } from '../middlewares/upload.js';
+import { listMyProjects } from '../controllers/project.controller.js';
 
 const r = Router();
 
@@ -58,6 +59,7 @@ const r = Router();
  *       200: { description: 프로젝트 페이지 }
  */
 r.post('/', validate(['name', 'ownerId']), createProject);
+r.get('/me', listMyProjects);
 r.get('/', listProjects);
 
 /**

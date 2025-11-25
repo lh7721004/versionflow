@@ -34,6 +34,57 @@ export class ProjectRepository {
     };
   }
 
+  async listByUser(userId, { page = 1, limit = 10, sort = '-createdAt' } = {}) {
+    const query = {
+      $or: [{ ownerId: userId }, { 'members.userId': userId }]
+    };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.model.find(query).sort(sort).skip(skip).limit(limit),
+      this.model.countDocuments(query)
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.max(1, Math.ceil(total / limit))
+    };
+  }
+
+  async listOwned(userId, { page = 1, limit = 10, sort = '-createdAt' } = {}) {
+    const query = { ownerId: userId };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.model.find(query).sort(sort).skip(skip).limit(limit),
+      this.model.countDocuments(query)
+    ]);
+    return {
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.max(1, Math.ceil(total / limit))
+    };
+  }
+
+  async listMember(userId, { page = 1, limit = 10, sort = '-createdAt' } = {}) {
+    const query = { 'members.userId': userId };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.model.find(query).sort(sort).skip(skip).limit(limit),
+      this.model.countDocuments(query)
+    ]);
+    return {
+      items,
+      total,
+      page,
+      limit,
+      pages: Math.max(1, Math.ceil(total / limit))
+    };
+  }
+
   async updateById(id, patch) {
     const updates = this._sanitizePatch(patch);
     if (!Object.keys(updates).length) return this.findById(id);

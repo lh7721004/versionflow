@@ -51,13 +51,13 @@ export default function App() {
       return;
     }
     const kakaoAuthUrl =
-      `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code`;
+    `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=code`;
     // window.location.href = kakaoAuthUrl;
     window.open(kakaoAuthUrl);
   };
-
+  
   const handleGoogleLogin = () => {
     const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
     const redirectUri = (import.meta as any).env?.VITE_GOOGLE_REDIRECT_URI;
@@ -67,18 +67,21 @@ export default function App() {
     }
     const scope = encodeURIComponent('openid profile email');
     const googleAuthUrl =
-      `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code&scope=${scope}`;
+    `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=code&scope=${scope}`;
     window.location.href = googleAuthUrl;
   };
-
+  
   const handleLogout = () => {
     setSelectedDocument(null);
     setUploadFolder(null);
     navigate('/login');
   };
-
+  useEffect(()=>{
+    console.log(userData);
+  },[userData])
+  
   // -----------------------
   // 사이드바에서 페이지 이동
   // page 인자로 'projects', 'approvals' 같은 문자열이 온다고 가정
@@ -164,6 +167,10 @@ export default function App() {
 
   if (isUserLoading) return null;
   if (isUserError || !userData) {
+    if (location.pathname !== '/login') {
+      navigate('/login');
+      return null;
+    }
     return (
       <>
         <LoginPage onKakaoLogin={handleLogin} onGoogleLogin={handleGoogleLogin} />
@@ -177,13 +184,13 @@ export default function App() {
   // -----------------------
   return (
     <div className="h-screen flex flex-col">
-      <Navbar userName={displayName} onLogout={handleLogout} />
+      <Navbar userName={displayName} isVisible={location.pathname!=='/login'} onLogout={handleLogout} />
       <div className="flex flex-1 overflow-hidden">
         <AppSidebar
           // 현재 페이지를 pathname 기반으로 넘길 수 있음
           // location.pathname이 '/', '/dashboard', '/projects' 이런 값
           currentPage={location.pathname.replace('/', '') || 'dashboard'}
-          isVisible={location.pathname==='/login'}
+          isVisible={location.pathname!=='/login'}
           onNavigate={handleNavigate}
           onDocumentClick={handleDocumentClick}
           onUploadClick={handleUploadClick}

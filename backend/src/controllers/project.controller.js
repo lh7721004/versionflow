@@ -1,5 +1,6 @@
 import asyncHandler from '../middlewares/asyncHandler.js';
 import { ProjectService } from '../services/project.service.js';
+import ApiError from '../utils/ApiError.js';
 
 const projectService = new ProjectService();
 
@@ -26,6 +27,28 @@ export const listProjects = asyncHandler(async (req, res) => {
   res.json({ data });
 });
 
+export const listMyProjects = asyncHandler(async (req, res) => {
+  if (!req.user?.sub) throw new ApiError(401, 'Unauthorized');
+  const { page, limit, sort } = req.query;
+  const commonParams = {
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    sort
+  };
+
+  const [owned, member] = await Promise.all([
+    projectService.listOwned(req.user.sub, commonParams),
+    projectService.listMember(req.user.sub, commonParams)
+  ]);
+
+  res.json({
+    data: {
+      owned,
+      member
+    }
+  });
+});
+
 export const updateProject = asyncHandler(async (req, res) => {
   const data = await projectService.update(req.params.id, req.body);
   res.json({ data });
@@ -49,4 +72,3 @@ export const updateProjectMemberRole = asyncHandler(async (req, res) => {
   const data = await projectService.updateMemberRole(req.params.id, userId, role);
   res.json({ data });
 });
-

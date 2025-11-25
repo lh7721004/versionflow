@@ -12,12 +12,13 @@ import {
 
 interface NavbarProps {
   userName: string;
+  isVisible: boolean;
   onLogout: () => void;
 }
 
-export function Navbar({ userName, onLogout }: NavbarProps) {
+export function Navbar({ userName, isVisible, onLogout }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-card">
+    <header className={`sticky top-0 z-50 w-full border-b bg-card ${isVisible?"":"hidden"}`}>
       <div className="flex h-16 items-center px-6">
         {/* Logo */}
         <div className="flex items-center gap-2 mr-8">
