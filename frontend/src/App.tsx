@@ -16,6 +16,7 @@ import { ApprovalManagement } from './components/ApprovalManagement';
 import { Toaster } from './components/ui/sonner';
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useMe } from "./queries/useMe";
+import React from 'react';
 
 type Page = 
   | 'login'
@@ -174,7 +175,9 @@ export default function App() {
     );
   }
 
-  if (isUserLoading) return null;
+  if (isUserLoading) {
+    return <div className="p-4">로딩 중...</div>;
+  }
   if (isUserError || !userData) {
     navigate('/login');
     return null;
