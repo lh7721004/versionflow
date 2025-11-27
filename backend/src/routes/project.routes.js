@@ -128,12 +128,19 @@ r.delete('/:id', deleteProject);
  *           schema:
  *             type: object
  *             properties:
- *               reviewRequired: { type: boolean }
- *               minApprovals: { type: integer }
- *               allowedFileTypes:
- *                 type: array
- *                 items: { type: string }
- *               autoMergeOnApproval: { type: boolean }
+ *               namingScheme:
+ *                 type: string
+ *                 description: 버전 네이밍 규칙
+ *                 enum:
+ *                   - date-major      # {year}.{month}.{version} 예: 2024.10.1
+ *                   - major-minor     # v{major}.{minor} 예: v1.0
+ *                   - semver          # v{major}.{minor}.{patch} 예: v1.0.0
+ *               reviewRequired:
+ *                 type: boolean
+ *                 description: 모든 커밋 승인 필요 여부
+ *               minApprovals:
+ *                 type: integer
+ *                 description: 승인 최소 인원
  *     responses:
  *       200: { description: 업데이트된 프로젝트 }
  */

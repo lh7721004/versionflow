@@ -14,12 +14,13 @@ const ProjectSchema = new Schema({
   }],
   settings: {
     versioning: {
-      branchStrategy: String,
-      reviewRequired: { type: Boolean, default: true },
-      minApprovals: { type: Number, default: 1 },
-      allowedFileTypes: [String],
-      maxFileSizeMB: Number,
-      autoMergeOnApproval: { type: Boolean, default: false },
+      namingScheme: {
+        type: String,
+        enum: ['date-major', 'major-minor', 'semver'],
+        default: 'semver' // 'semver' => v{major}.{minor}.{patch}
+      },
+      reviewRequired: { type: Boolean, default: true }, // 모든 커밋 승인 필요 여부
+      minApprovals: { type: Number, default: 1 } // 승인 최소 인원
     },
   },
   status: { type: String, enum: ['active', 'archived'], default: 'active' },

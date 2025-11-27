@@ -11,7 +11,6 @@ export default function requireAuth(req, res, next) {
     maxAge: 60 * 60 * 1000 // 1h
   };
 
-  // Helper to refresh access token from refresh token
   const tryRefresh = () => {
     if (!refreshToken) throw new ApiError(401, 'Authorization token required');
     const refreshPayload = verifyRefreshToken(refreshToken);
