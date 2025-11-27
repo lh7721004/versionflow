@@ -42,6 +42,15 @@ app.use(
 );
 
 app.use('/api', router);
+
+// serve frontend build (dist) for non-API routes
+const frontendDist = path.join(process.cwd(), '..', 'frontend', 'dist');
+app.use(express.static(frontendDist));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
+
 app.use(notFound);
 app.use(errorHandler);
 
