@@ -90,6 +90,11 @@ export const updateProject = asyncHandler(async (req, res) => {
   res.json({ data });
 });
 
+export const updateProjectVersioning = asyncHandler(async (req, res) => {
+  const data = await projectService.updateVersioning(req.params.id, req.body);
+  res.json({ data });
+});
+
 export const deleteProject = asyncHandler(async (req, res) => {
   if (!req.user?.sub) throw new ApiError(401, 'Unauthorized');
   const data = await projectService.remove(req.params.id, req.user.sub);

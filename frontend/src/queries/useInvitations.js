@@ -33,3 +33,28 @@ export function useRespondInvitation() {
   });
 }
 
+/**
+ * @typedef {Object} AcceptInvitationVariables
+ * @property {string} token
+ * @property {string} userId
+ */
+
+/**
+ * @returns {import('@tanstack/react-query').UseMutationResult<any, unknown, AcceptInvitationVariables>}
+ */
+export function useAcceptInvitationByToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    /** @param {AcceptInvitationVariables} param0 */
+    mutationFn: async ({ token, userId }) => {
+      console.log("Accepting invitation with token:", token, "and userId:", userId);
+      const res = await api.post(`/invitations/accept/token`, { token, userId });
+      return res.data?.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["invitations"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+

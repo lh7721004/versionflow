@@ -73,6 +73,18 @@ export class ProjectService {
     return updated;
   }
 
+  async updateVersioning(projectId, versioning) {
+    const project = await this.repo.findById(projectId);
+    if (!project) throw new ApiError(404, 'Project not found');
+    project.settings = project.settings || {};
+    project.settings.versioning = {
+      ...(project.settings.versioning || {}),
+      ...versioning
+    };
+    await project.save();
+    return project;
+  }
+
   async remove(id, userId) {
     const project = await this.repo.findById(id);
     if (!project) throw new ApiError(404, 'Project not found');

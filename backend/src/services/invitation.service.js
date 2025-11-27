@@ -20,7 +20,7 @@ export class InvitationService {
 
   async get(id) {
     const invitation = await this.repo.findById(id);
-    if (!invitation) throw new ApiError(404, 'Invitation not found');
+    if (!invitation) throw new ApiError(404, '초대를 찾을 수 없습니다.');
     return invitation;
   }
 
@@ -34,24 +34,24 @@ export class InvitationService {
 
   async respond(id, decision) {
     if (!['accepted', 'declined'].includes(decision)) {
-      throw new ApiError(400, 'Invalid decision');
+      throw new ApiError(400, '잘못된 초대입니다.');
     }
     const updated = await this.repo.updateById(id, {
       status: decision,
       respondedAt: new Date()
     });
-    if (!updated) throw new ApiError(404, 'Invitation not found');
+    if (!updated) throw new ApiError(404, '초대장을 찾을 수 없습니다.');
     return updated;
   }
 
   async acceptByToken(token, userId) {
-    if (!token || !userId) throw new ApiError(400, 'token and userId required');
+    if (!token || !userId) throw new ApiError(400, '잘못된 초대입니다.');
     const invitation = await this.repo.findByToken(token);
-    if (!invitation) throw new ApiError(404, 'Invitation not found');
-    if (invitation.status !== 'pending') throw new ApiError(400, 'Invitation already processed');
+    if (!invitation) throw new ApiError(404, '초대장을 찾을 수 없습니다.');
+    if (invitation.status !== 'pending') throw new ApiError(400, '이미 처리된 요청입니다.');
     if (invitation.expiresAt && invitation.expiresAt < new Date()) {
       await this.repo.updateById(invitation._id, { status: 'expired' });
-      throw new ApiError(400, 'Invitation expired');
+      throw new ApiError(400, '초대가 만료되었습니다');
     }
 
     await this.projectService.addMember(invitation.projectId, {
@@ -71,7 +71,7 @@ export class InvitationService {
 
   async expire(id) {
     const updated = await this.repo.updateById(id, { status: 'expired' });
-    if (!updated) throw new ApiError(404, 'Invitation not found');
+    if (!updated) throw new ApiError(404, '초대를 찾을 수 없습니다.');
     return updated;
   }
 
@@ -85,7 +85,7 @@ export class InvitationService {
         <p>프로젝트에 초대되었습니다. 아래 버튼을 눌러 초대를 수락해 주세요.</p>
         <p>역할: <b>${invitation.role || 'member'}</b></p>
         <a href="${acceptUrl}" style="display:inline-block;padding:10px 14px;background:#4F46E5;color:#fff;border-radius:6px;text-decoration:none;">초대 수락</a>
-        <p>만료일: ${invitation.expiresAt ? new Date(invitation.expiresAt).toISOString() : '없음'}</p>
+        <p>만료일: ${invitation.expiresAt ? (new Date(invitation.expiresAt).toISOString().split("T")[0])+" "+ (new Date(invitation.expiresAt).toISOString().split("T")[1].split(".")[0]) : '없음'}</p>
         <p>혹은 아래 링크를 복사해 브라우저에 붙여 넣으세요:</p>
         <p>${acceptUrl}</p>
       </div>

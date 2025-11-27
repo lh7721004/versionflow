@@ -15,6 +15,7 @@ import { GlobalFileUpload } from './components/GlobalFileUpload';
 import { ApprovalManagement } from './components/ApprovalManagement';
 import { Toaster } from './components/ui/sonner';
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { InviteAccept } from './components/InviteAccept';
 import { useMe } from "./queries/useMe";
 import React from 'react';
 
@@ -33,6 +34,7 @@ type Page =
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const isInviteRoute = location.pathname.startsWith('/invite/accept');
 
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
   // const [userName] = useState('김철수');
@@ -173,6 +175,15 @@ export default function App() {
     );
   }
 
+  if (isInviteRoute) {
+    return (
+      <>
+        <InviteAccept onKakaoLogin={handleLogin} onGoogleLogin={handleGoogleLogin} />
+        <Toaster />
+      </>
+    );
+  }
+
   if (isUserLoading) {
     return <div className="p-4">로딩 중...</div>;
   }
@@ -279,6 +290,7 @@ export default function App() {
               path="/history"
               element={<VersionHistory onBack={handleBack} />}
             />
+            <Route path="/invite/accept" element={<InviteAccept />} />
 
             {/* 단순 텍스트 페이지들 */}
             <Route

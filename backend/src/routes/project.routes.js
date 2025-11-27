@@ -6,6 +6,7 @@ import {
   listProjectsByUserId,
   listProjectFolders,
   updateProject,
+  updateProjectVersioning,
   deleteProject,
   leaveProject,
   addProjectMember,
@@ -93,6 +94,30 @@ r.get('/', listProjects);
  *         name: id
  *         required: true
  *         schema: { type: string }
+ *   patch:
+ *     summary: 프로젝트 버전 관리 설정 수정
+ *     tags: [Projects]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reviewRequired: { type: boolean }
+ *               minApprovals: { type: integer }
+ *               allowedFileTypes:
+ *                 type: array
+ *                 items: { type: string }
+ *               autoMergeOnApproval: { type: boolean }
+ *     responses:
+ *       200: { description: 업데이트된 프로젝트 }
  *   delete:
  *     summary: 프로젝트 삭제 (owner만)
  *     tags: [Projects]
@@ -107,6 +132,7 @@ r.get('/', listProjects);
  */
 r.get('/:id', getProject);
 r.patch('/:id', updateProject);
+r.patch('/:id/settings/versioning', updateProjectVersioning);
 r.delete('/:id', deleteProject);
 
 /**
