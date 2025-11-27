@@ -37,3 +37,8 @@ export const expireInvitation = asyncHandler(async (req, res) => {
   res.json({ data });
 });
 
+export const acceptInvitationByToken = asyncHandler(async (req, res) => {
+  const { token, userId } = req.body;
+  const data = await invitationService.acceptByToken(token, userId);
+  res.json({ data });
+});

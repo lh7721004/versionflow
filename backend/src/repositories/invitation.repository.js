@@ -49,11 +49,10 @@ export class InvitationRepository {
   }
 
   _sanitizePatch(patch = {}) {
-    const allowed = ['status', 'respondedAt', 'inviteeId', 'inviteeEmail', 'expiresAt', 'token'];
+    const allowed = ['status', 'respondedAt', 'inviteeId', 'inviteeEmail', 'expiresAt', 'token', 'role'];
     return Object.entries(patch).reduce((acc, [key, value]) => {
       if (allowed.includes(key) && value !== undefined) acc[key] = value;
       return acc;
     }, {});
   }
 }
-

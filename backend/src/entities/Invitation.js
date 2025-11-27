@@ -6,9 +6,9 @@ const { Schema, Types: { ObjectId } } = mongoose;
 const InvitationSchema = new Schema({
   projectId: { type: ObjectId, ref: 'Project', required: true },
   inviterId: { type: ObjectId, ref: 'User', required: true },
-  inviteeId: { type: ObjectId, ref: 'User' },
-  inviteeEmail: String,
-  token: { type: String, unique: true },
+  inviteeEmail: { type: String, required: true },
+  token: { type: String, unique: true, required: true },
+  role: { type: String, enum: ['owner', 'maintainer', 'member'], required: true, default: 'member' },
   status: { type: String, enum: ['pending', 'accepted', 'declined', 'expired'], default: 'pending' },
   expiresAt: Date,
   respondedAt: Date,

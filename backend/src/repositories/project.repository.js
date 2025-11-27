@@ -91,6 +91,10 @@ export class ProjectRepository {
     return this.model.findByIdAndUpdate(id, updates, { new: true });
   }
 
+  async deleteById(id) {
+    return this.model.findByIdAndDelete(id);
+  }
+
   async addMember(projectId, member) {
     return this.model.findByIdAndUpdate(
       projectId,

@@ -17,7 +17,7 @@ export const getProject = asyncHandler(async (req, res) => {
 
 export const listProjects = asyncHandler(async (req, res) => {
   const { page, limit, sort, ownerId, memberUserId, status } = req.query;
-  const includeTree = req.query.includeTree === 'true';
+  const includeTree = String(req.query.includeTree || '').toLowerCase() === 'true';
   const params = {
     page: Number(page) || 1,
     limit: Number(limit) || 10,
@@ -66,7 +66,7 @@ export const listMyProjects = asyncHandler(async (req, res) => {
     sort
   };
 
-  const useTree = includeTree === 'true';
+  const useTree = String(includeTree || '').toLowerCase() === 'true';
 
   const [owned, member] = await Promise.all([
     useTree
@@ -87,6 +87,18 @@ export const listMyProjects = asyncHandler(async (req, res) => {
 
 export const updateProject = asyncHandler(async (req, res) => {
   const data = await projectService.update(req.params.id, req.body);
+  res.json({ data });
+});
+
+export const deleteProject = asyncHandler(async (req, res) => {
+  if (!req.user?.sub) throw new ApiError(401, 'Unauthorized');
+  const data = await projectService.remove(req.params.id, req.user.sub);
+  res.json({ data });
+});
+
+export const leaveProject = asyncHandler(async (req, res) => {
+  if (!req.user?.sub) throw new ApiError(401, 'Unauthorized');
+  const data = await projectService.leaveProject(req.params.id, req.user.sub);
   res.json({ data });
 });
 

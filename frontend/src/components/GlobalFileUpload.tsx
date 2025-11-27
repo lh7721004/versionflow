@@ -35,10 +35,13 @@ interface GlobalFileUploadProps {
   onOpenChange: (open: boolean) => void;
 }
 interface ProjectData {
-  id: string;
+  _id: string;
   name: string;
 }
 
+interface SelectProject {
+  items:ProjectData[];
+}
 export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState([] as (UploadedFile[]));
   const [commitMessage, setCommitMessage] = useState('');
@@ -54,7 +57,9 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
   //   { id: 'proj-3', name: '기술 문서' },
   //   { id: 'proj-4', name: 'HR 정책 문서' },
   // ];
-  const [projects, setProjects] = useState<any[]>(projectData || []);
+const [projects, setProjects] = useState<SelectProject>({
+  items: projectData ?? [],
+});
   useEffect(()=>{
     if(projectData){
       setProjects(projectData);
@@ -199,6 +204,9 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
       toast.error('폴더를 선택해주세요.');
       return;
     }
+    console.log(selectedProject);
+    // /projects/:projectId/upload
+    // /projects/:projectId/upload
 
     // 모든 파일 업로드 시뮬레이션
     for (const file of uploadedFiles) {
@@ -207,7 +215,7 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
       }
     }
 
-    const projectName = projects.find(p => p.id === selectedProject)?.name;
+    const projectName = projects.items.find(p => p._id === selectedProject)?.name;
     toast.success(`${uploadedFiles.length}개 파일이 "${projectName}"에 성공적으로 커밋되었습니다.`);
     
     // 초기화 및 닫기
@@ -242,39 +250,12 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
 
         <div className="flex-1 flex flex-col gap-6 p-1 overflow-y-scroll">
           {/* Step 1: 파일 업로드 영역 */}
-          <div>
-            <Label className="mb-2 block">1. 파일 선택</Label>
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="mb-2">파일을 드래그 앤 드롭하거나</p>
-              <label htmlFor="file-upload">
-                <Button variant="outline" asChild>
-                  <span className="cursor-pointer">파일 선택</span>
-                </Button>
-              </label>
-              <input
-                id="file-upload"
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFileInput}
-              />
-            </div>
-          </div>
+          
 
           {/* Step 2: 업로드된 파일 미리보기 */}
-          {uploadedFiles.length > 0 && (
+          {uploadedFiles.length > 0 ? (
             <div>
-              <Label className="mb-2 block">2. 업로드된 파일 ({uploadedFiles.length})</Label>
+              <Label className="mb-2 block">1. 파일 선택 ({uploadedFiles.length})</Label>
               <ScrollArea className="h-48 border rounded-lg">
                 <div className="p-4 space-y-2">
                   {uploadedFiles.map((uploadedFile) => {
@@ -298,7 +279,7 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
                           </div>
 
                           {/* 파일 정보 */}
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 max-w-72">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <p className="truncate">{uploadedFile.file.name}</p>
@@ -341,12 +322,39 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
                 </div>
               </ScrollArea>
             </div>
-          )}
+          ):<div>
+            <Label className="mb-2 block">1. 파일 선택</Label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragging
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {}
+              <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="mb-2">파일을 드래그 앤 드롭하거나</p>
+              <label htmlFor="file-upload">
+                <Button variant="outline" asChild>
+                  <span className="cursor-pointer">파일 선택</span>
+                </Button>
+              </label>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileInput}
+              />
+            </div>
+          </div>}
 
-          {/* Step 3: 커밋 메시지 */}
           <div>
             <Label htmlFor="commit-message" className="mb-2 block">
-              3. 커밋 메시지
+              2. 커밋 메시지
             </Label>
             <Textarea
               id="commit-message"
@@ -357,10 +365,9 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
             />
           </div>
 
-          {/* Step 4: 프로젝트 선택 */}
           <div>
             <Label htmlFor="project-select" className="mb-2 block">
-              4. 프로젝트 선택
+              3. 프로젝트 선택
             </Label>
             <Select value={selectedProject} onValueChange={setSelectedProject}>
               <SelectTrigger id="project-select">
@@ -376,10 +383,9 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
             </Select>
           </div>
 
-          {/* Step 5: 폴더 선택 */}
           <div>
             <Label htmlFor="folder-select" className="mb-2 block">
-              5. 폴더 선택
+              4. 폴더 선택
             </Label>
             <Select value={selectedFolder} onValueChange={setSelectedFolder}>
               <SelectTrigger id="folder-select">

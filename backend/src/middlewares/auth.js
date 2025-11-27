@@ -4,8 +4,6 @@ import { verifyToken, verifyRefreshToken, signToken } from '../utils/jwt.js';
 export default function requireAuth(req, res, next) {
   const accessToken = req.cookies?.accessToken;
   const refreshToken = req.cookies?.refreshToken;
-  console.log(accessToken);
-  console.log(refreshToken);
   const cookieOpts = {
     httpOnly: true,
     sameSite: 'lax',

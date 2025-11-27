@@ -1,12 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Home, Settings, Folder, Users, ChevronRight, ChevronDown, FolderOpen, File, Upload, ClipboardCheck } from 'lucide-react';
+import { Home, Settings, Folder, Users, ChevronRight, ChevronDown, FolderOpen, File, Upload, ClipboardCheck, FolderPlus, Trash2 } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { useProjects } from '../queries/useProjects';
 import { useMyProjects } from '../queries/useProjects';
 import { useProjectMembers } from '../queries/useProjects';
 import { useAsyncError } from 'react-router-dom';
 import { useMe } from '../queries/useMe';
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Button } from './ui/button';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 interface MenuItem {
   id: string;
   label: string;
@@ -174,6 +188,7 @@ interface AppSidebarProps {
   onGlobalUploadClick?: () => void;
   onApprovalClick?: () => void;
   onApprovalManagementClick?: () => void;
+  newlyCreatedProjectId: string | null;
 }
 
 
@@ -182,20 +197,39 @@ export function AppSidebar({
   isVisible,
   onNavigate, 
   onDocumentClick,
-  onUploadClick,
   onGlobalUploadClick,
-  onApprovalClick,
-  onApprovalManagementClick
+  onApprovalManagementClick,
+  newlyCreatedProjectId,
+
 }: AppSidebarProps) {
   
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['my-projects', 'participating-projects']);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; folderId: string; folderName: string } | null>(null);
-
+  const [contextMenu, setContextMenu] = useState<{ 
+    x: number; 
+    y: number; 
+    node: ProjectNode;
+  } | null>(null);
+  const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [nodeToDelete, setNodeToDelete] = useState<ProjectNode | null>(null);
+  const [selectedParentNode, setSelectedParentNode] = useState<ProjectNode | null>(null);
+    // 새로 생성된 프로젝트를 자동으로 펼치기
+  if (newlyCreatedProjectId && !expandedFolders.includes(newlyCreatedProjectId)) {
+    setExpandedFolders((prev) => {
+      // 'my-projects'도 함께 열기
+      const newExpanded = [...prev, newlyCreatedProjectId];
+      if (!newExpanded.includes('my-projects')) {
+        newExpanded.push('my-projects');
+      }
+      return newExpanded;
+    });
+    toast.success('새 프로젝트가 생성되었습니다.');
+  }
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: '대시보드', icon: Home },
     { id: 'upload', label: '업로드', icon: Upload },
-    { id: 'approval', label: '승인관리', icon: ClipboardCheck },
-    { id: 'settings', label: '설정', icon: Settings },
+    { id: 'approval', label: '승인관리', icon: ClipboardCheck }
   ];
 
   const {data,isLoading,isError} = useProjects({limit:20,offset:0});
@@ -206,6 +240,21 @@ export function AppSidebar({
   const myProjects: ProjectNode[] = mapProjectsToNodes(data);
   const participatingProjects: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.owned:[]);
   const participatingProjects2: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.member:[]);
+
+  const onCreateFolder = (parentId: string, folderName: string) => {
+    // 폴더 생성 로직 구현
+    console.log(`폴더 생성: ${folderName} in ${parentId}`);
+  };
+  
+  const onDeleteNode = (nodeId: string) => {
+    console.log(`노드 삭제: ${nodeId}`);
+    if(nodeId.startsWith('project/')){
+      // 프로젝트 삭제 로직 구현
+      
+    } else {
+      // 폴더/파일 삭제 로직 구현
+    }
+  };
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) =>
@@ -221,16 +270,9 @@ export function AppSidebar({
       setContextMenu({
         x: e.clientX,
         y: e.clientY,
-        folderId: node.id,
-        folderName: node.name
+        node: node
       });
-    }
-  };
-
-  const handleUploadClick = () => {
-    if (contextMenu && onUploadClick) {
-      onUploadClick(contextMenu.folderName, contextMenu.folderId);
-      setContextMenu(null);
+      setSelectedParentNode(node);
     }
   };
 
@@ -272,7 +314,7 @@ export function AppSidebar({
             )}
             <span className="text-sm truncate">{node.name}</span>
           </button>
-          {isExpanded && node.children?.map((child) => renderProjectTree(child, level + 1))}
+          {isExpanded && node.children?.map((child) => renderProjectTree(child, level + 1, treeKey))}
         </div>
       );
     }
@@ -320,11 +362,27 @@ export function AppSidebar({
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={handleUploadClick}
+              onClick={() => {
+                setNodeToDelete(contextMenu.node);
+                setShowDeleteDialog(true);
+                setContextMenu(null);
+              }}
               className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
             >
-              <Upload className="w-4 h-4" />
-              파일 업로드
+              <Trash2 className="w-4 h-4" />
+              삭제
+            </button>
+            <button
+              onClick={() => {
+                setFolderName('');
+                setSelectedParentNode(contextMenu.node);
+                setShowCreateFolderDialog(true);
+                setContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+            >
+              <FolderPlus className="w-4 h-4" />
+              폴더 생성
             </button>
           </div>
         </>
@@ -394,6 +452,86 @@ export function AppSidebar({
           {isParticipatingProjectsExpanded && participatingProjects2.map((project) => renderProjectTree(project, 1, 'participating'))}
         </div>
       </nav>
+      {/* 폴더 생성 다이얼로그 */}
+      <Dialog open={showCreateFolderDialog} onOpenChange={setShowCreateFolderDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>폴더 생성</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="folder-name">폴더 이름</Label>
+              <Input
+                id="folder-name"
+                placeholder="예: 문서"
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && folderName.trim() && selectedParentNode) {
+                    onCreateFolder(selectedParentNode.id, folderName.trim());
+                    setShowCreateFolderDialog(false);
+                    setFolderName('');
+                    setSelectedParentNode(null);
+                    toast.success('폴더가 생성되었습니다.');
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateFolderDialog(false)}>
+              취소
+            </Button>
+            <Button
+              onClick={() => {
+                if (folderName.trim() && selectedParentNode) {
+                  onCreateFolder(selectedParentNode.id, folderName.trim());
+                  setShowCreateFolderDialog(false);
+                  setFolderName('');
+                  setSelectedParentNode(null);
+                  toast.success('폴더가 생성되었습니다.');
+                }
+              }}
+              disabled={!folderName.trim()}
+              className="bg-[#004B8D] hover:bg-[#003d73]"
+            >
+              생성
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{nodeToDelete?.name}"을(를) 삭제하면 하위 항목도 모두 삭제됩니다. 이 작업은 취소할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-[#E25A5A] hover:bg-[#c94d4d]"
+              onClick={() => {
+                if (nodeToDelete) {
+                  if (nodeToDelete.type === 'config') {
+                    toast.error('관리자 설정 및 버전 관리 정책 파일은 삭제할 수 없습니다.');
+                  } else {
+                    onDeleteNode(nodeToDelete.id);
+                    toast.success(`${nodeToDelete.name}이(가) 삭제되었습니다.`);
+                  }
+                }
+                setShowDeleteDialog(false);
+                setNodeToDelete(null);
+              }}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

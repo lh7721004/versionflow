@@ -6,6 +6,8 @@ import {
   listProjectsByUserId,
   listProjectFolders,
   updateProject,
+  deleteProject,
+  leaveProject,
   addProjectMember,
   removeProjectMember,
   updateProjectMemberRole
@@ -82,8 +84,6 @@ r.get('/', listProjects);
  *         name: id
  *         required: true
  *         schema: { type: string }
- *     responses:
- *       200: { description: 프로젝트 }
  *   patch:
  *     summary: 프로젝트 수정
  *     tags: [Projects]
@@ -93,17 +93,38 @@ r.get('/', listProjects);
  *         name: id
  *         required: true
  *         schema: { type: string }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
+ *   delete:
+ *     summary: 프로젝트 삭제 (owner만)
+ *     tags: [Projects]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
  *     responses:
- *       200: { description: 수정된 프로젝트 }
+ *       200: { description: 삭제 완료 }
  */
 r.get('/:id', getProject);
 r.patch('/:id', updateProject);
+r.delete('/:id', deleteProject);
+
+/**
+ * @swagger
+ * /projects/{id}/leave:
+ *   delete:
+ *     summary: 프로젝트 나가기 (owner 제외)
+ *     tags: [Projects]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: 나가기 완료 }
+ */
+r.delete('/:id/leave', leaveProject);
 
 /**
  * @swagger

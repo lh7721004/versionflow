@@ -24,6 +24,31 @@ export function useCreateFile() {
     },
   });
 }
+export function useUploadFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, file, path }) => {
+      // file
+      // authorId
+      // authorName
+      // message :
+      // branch --
+      // folderPath --
+      const formData = new FormData();
+      formData.append("file", file);
+      if (path) {
+        formData.append("path", path);
+      }
+      const res = await api.post(`/projects/${projectId}/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data?.data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["files", variables.projectId] });
+    },
+  });
+}
 
 export function useUpdateFile() {
   const qc = useQueryClient();

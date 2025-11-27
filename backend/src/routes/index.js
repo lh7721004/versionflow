@@ -2,6 +2,7 @@ import { Router } from 'express';
 import userRoutes from './user.routes.js';
 import projectRoutes from './project.routes.js';
 import fileRoutes from './file.routes.js';
+import folderRoutes from './folder.routes.js';
 import invitationRoutes from './invitation.routes.js';
 import versionRoutes from './version.routes.js';
 import rollbackRoutes from './rollback.routes.js';
@@ -22,6 +23,7 @@ router.use((req, res, next) => {
 });
 router.use('/users', userRoutes);
 router.use('/projects', projectRoutes);
+router.use('/folders', folderRoutes);
 router.use('/projects/:projectId/files', fileRoutes);
 router.use('/projects/:projectId/previews', previewRoutes);
 router.use('/invitations', invitationRoutes);

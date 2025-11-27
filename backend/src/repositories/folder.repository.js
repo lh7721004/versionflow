@@ -21,7 +21,7 @@ export class FolderRepository {
     return this.model.find({ projectId }).sort('path');
   }
 
-  async listByProjectFlat(projectId) {
-    return this.model.find({ projectId }).sort('path');
+  async deleteById(id) {
+    return this.model.findByIdAndDelete(id);
   }
 }

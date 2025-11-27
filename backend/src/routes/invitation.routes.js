@@ -4,7 +4,8 @@ import {
   getInvitation,
   listInvitations,
   respondInvitation,
-  expireInvitation
+  expireInvitation,
+  acceptInvitationByToken
 } from '../controllers/invitation.controller.js';
 import validate from '../middlewares/validate.js';
 import validateObjectId from '../middlewares/validateObjectId.js';
@@ -21,7 +22,7 @@ const r = Router();
  * @swagger
  * /invitations:
  *   post:
- *     summary: 초대 생성
+ *     summary: 초대 생성 (이메일 + 역할 지정)
  *     tags: [Invitations]
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
@@ -30,21 +31,22 @@ const r = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [projectId, inviterId]
+ *             required: [projectId, inviterId, inviteeEmail, role]
  *             properties:
  *               projectId:
  *                 type: string
  *                 format: objectId
- *                 example: 507f1f77bcf86cd799439011
  *               inviterId:
  *                 type: string
  *                 format: objectId
- *                 example: 507f1f77bcf86cd799439012
- *               inviteeId:
+ *               inviteeEmail:
  *                 type: string
- *                 format: objectId
- *                 example: 507f1f77bcf86cd799439013
- *               inviteeEmail: { type: string }
+ *               role:
+ *                 type: string
+ *                 enum: ['owner','maintainer','member']
+ *               expiresAt:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       201: { description: 생성된 초대 }
  *   get:
@@ -54,7 +56,12 @@ const r = Router();
  *     responses:
  *       200: { description: 초대 목록 }
  */
-r.post('/', validate(['projectId', 'inviterId']), validateObjectId(['projectId', 'inviterId', 'inviteeId']), createInvitation);
+r.post(
+  '/',
+  validate(['projectId', 'inviterId', 'inviteeEmail', 'role']),
+  validateObjectId(['projectId', 'inviterId']),
+  createInvitation
+);
 r.get('/', listInvitations);
 r.get('/:id', validateObjectId(['id']), getInvitation);
 
@@ -72,7 +79,6 @@ r.get('/:id', validateObjectId(['id']), getInvitation);
  *         schema:
  *           type: string
  *           format: objectId
- *           example: 507f1f77bcf86cd799439011
  *     requestBody:
  *       required: true
  *       content:
@@ -87,5 +93,29 @@ r.get('/:id', validateObjectId(['id']), getInvitation);
  */
 r.post('/:id/respond', validate(['decision']), validateObjectId(['id']), respondInvitation);
 r.post('/:id/expire', expireInvitation);
+
+/**
+ * @swagger
+ * /invitations/accept/token:
+ *   post:
+ *     summary: 초대 토큰으로 수락 및 멤버 추가
+ *     tags: [Invitations]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, userId]
+ *             properties:
+ *               token: { type: string }
+ *               userId:
+ *                 type: string
+ *                 format: objectId
+ *     responses:
+ *       200: { description: 초대 수락 및 멤버 추가 완료 }
+ */
+r.post('/accept/token', validate(['token', 'userId']), acceptInvitationByToken);
 
 export default r;

@@ -41,6 +41,8 @@ export default function App() {
   const [isGlobalUploadOpen, setIsGlobalUploadOpen] = useState(false);
   const [isApprovalManagementOpen, setIsApprovalManagementOpen] = useState(false);
   const { data: userData, isLoading: isUserLoading, isError: isUserError } = useMe();
+  const [newlyCreatedProjectId, setNewlyCreatedProjectId] = useState<string | null>(null);
+
   // -----------------------
   // 로그인 / 로그아웃
   // -----------------------
@@ -142,11 +144,6 @@ export default function App() {
     navigate('/history');
   };
 
-  const handleUploadClick = (folderName: string, folderId: string) => {
-    setUploadFolder({ name: folderName, id: folderId });
-    navigate('/file-upload');
-  };
-
   const handleBackFromUpload = () => {
     setUploadFolder(null);
     navigate('/project-detail');
@@ -159,6 +156,7 @@ export default function App() {
   const handleApprovalManagementClick = () => {
     navigate('/approval-management');
   };
+  
 
   const displayName = useMemo(() => {
     if (!userData) return '';
@@ -197,9 +195,9 @@ export default function App() {
           isVisible={location.pathname!=='/login'}
           onNavigate={handleNavigate}
           onDocumentClick={handleDocumentClick}
-          onUploadClick={handleUploadClick}
           onGlobalUploadClick={handleGlobalUploadClick}
           onApprovalManagementClick={handleApprovalManagementClick}
+          newlyCreatedProjectId={newlyCreatedProjectId}
         />
 
         <main className="flex-1 overflow-hidden">
@@ -316,18 +314,6 @@ export default function App() {
                 </div>
               }
             />
-            <Route
-              path="/settings"
-              element={
-                <div className="p-8">
-                  <h1>설정</h1>
-                  <p className="text-muted-foreground mt-2">
-                    시스템 설정 및 환경을 관리합니다.
-                  </p>
-                </div>
-              }
-            />
-
             {/* 관리용 페이지 */}
             <Route path="/approval-management" element={<ApprovalManagement />} />
             <Route path="/project/:id/admin" element={<AdminSettings />} />

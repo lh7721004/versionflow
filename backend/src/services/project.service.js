@@ -73,6 +73,29 @@ export class ProjectService {
     return updated;
   }
 
+  async remove(id, userId) {
+    const project = await this.repo.findById(id);
+    if (!project) throw new ApiError(404, 'Project not found');
+    if (project.ownerId.toString() !== userId.toString()) {
+      throw new ApiError(403, 'Only owner can delete project');
+    }
+    const deleted = await this.repo.deleteById(id);
+    if (!deleted) throw new ApiError(404, 'Project not found');
+    return { id };
+  }
+
+  async leaveProject(projectId, userId) {
+    const project = await this.repo.findById(projectId);
+    if (!project) throw new ApiError(404, 'Project not found');
+    const member = project.members.find((m) => m.userId.toString() === userId.toString());
+    if (!member) throw new ApiError(400, 'Not a member of this project');
+    if (member.role === 'owner') {
+      throw new ApiError(403, 'Owner cannot leave. Transfer ownership or delete project.');
+    }
+    const updated = await this.repo.removeMember(projectId, userId);
+    return updated;
+  }
+
   async addMember(projectId, member) {
     const updated = await this.repo.addMember(projectId, member);
     if (!updated) throw new ApiError(404, 'Project not found');
