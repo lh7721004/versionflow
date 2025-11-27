@@ -100,12 +100,6 @@ Q4: 정식 출시 및 평가`);
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <Save className="w-4 h-4" />
-              저장
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -124,59 +118,6 @@ Q4: 정식 출시 및 평가`);
                 />
               </div>
             </div>
-          </Card>
-
-          <Separator />
-
-          {/* Commit Section */}
-          <Card className="p-6">
-            <h3 className="mb-4">커밋 및 제출</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label>커밋 메시지 (한 줄 요약)</label>
-                <Textarea
-                  placeholder="예: 예산 항목 수정 및 일정 업데이트"
-                  value={commitMessage}
-                  onChange={(e) => setCommitMessage(e.target.value)}
-                  rows={2}
-                />
-                <p className="text-sm text-muted-foreground">
-                  변경 사항을 간단히 설명해주세요. 이 메시지는 버전 히스토리에 기록됩니다.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCommit}
-                  disabled={!commitMessage.trim()}
-                  className="gap-2"
-                >
-                  <GitCommit className="w-4 h-4" />
-                  커밋 및 제출
-                </Button>
-                <Button variant="outline" onClick={onBack}>
-                  취소
-                </Button>
-              </div>
-
-              {commitMessage.trim() && (
-                <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                  <p className="text-sm">
-                    <strong>커밋하면:</strong> 버전 v4가 생성되고 승인 프로세스로 이동합니다.
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Editor Tips */}
-          <Card className="p-6 bg-muted/50">
-            <h4 className="mb-2">💡 에디터 팁</h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              <li>• 문서는 자동으로 저장됩니다</li>
-              <li>• 커밋 메시지는 명확하고 간결하게 작성하세요</li>
-              <li>• 커밋 후 팀장과 부장의 승인이 필요합니다</li>
-            </ul>
           </Card>
         </div>
       </div>

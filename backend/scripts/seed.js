@@ -23,7 +23,21 @@ async function main() {
     { email: 'owner@example.com', name: '오너', role: 'admin' },
     { email: 'member1@example.com', name: '멤버1', role: 'user' },
     { email: 'member2@example.com', name: '멤버2', role: 'user' },
-    { email: 'guest@example.com', name: '게스트', role: 'user' }
+    { email: 'guest@example.com', name: '게스트', role: 'user' },
+    {
+      email: 'lh7721004@gmail.com',
+      name: '김이현',
+      role: 'user',
+      avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIgbm4L8llgw7U4Y1iKqzrOvByVbeX7LZekAlHggDN-G_H3n2U=s96-c',
+      googleId: '110373783009894644519'
+    },
+    {
+      email: 'lh7721004@naver.com',
+      name: '김이현',
+      role: 'user',
+      avatarUrl: 'http://img1.kakaocdn.net/thumb/R640x640.q70/?fname=http://t1.kakaocdn.net/account_images/default_profile.jpeg',
+      kakaoId: '4595787514'
+    }
   ];
   const userDocs = {};
   for (const u of users) {
@@ -34,11 +48,16 @@ async function main() {
     }
     const created = await UserModel.create({
       ...u,
-      kakaoId: u.email,
-      googleId: u.email,
+      kakaoId: u.kakaoId || u.email,
+      googleId: u.googleId || u.email,
       lastLoginAt: new Date()
     });
     userDocs[u.email] = created;
+  }
+  // 기존 kakaoId로 존재하는 사용자를 별도 키로 매핑
+  const kakaoUser = await UserModel.findOne({ kakaoId: '4595787514' });
+  if (kakaoUser) {
+    userDocs['kakao-4595787514'] = kakaoUser;
   }
 
   // 2) 프로젝트 생성
@@ -49,7 +68,9 @@ async function main() {
       ownerEmail: 'owner@example.com',
       members: [
         { email: 'member1@example.com', role: 'maintainer' },
-        { email: 'member2@example.com', role: 'member' }
+        { email: 'member2@example.com', role: 'member' },
+        { email: 'lh7721004@gmail.com', role: 'member' },
+        { email: 'lh7721004@naver.com', role: 'member' } // kakaoId user
       ]
     },
     {
@@ -58,7 +79,9 @@ async function main() {
       ownerEmail: 'member1@example.com',
       members: [
         { email: 'owner@example.com', role: 'maintainer' },
-        { email: 'member2@example.com', role: 'member' }
+        { email: 'member2@example.com', role: 'member' },
+        { email: 'lh7721004@gmail.com', role: 'member' },
+        { email: 'lh7721004@naver.com', role: 'member' } // kakaoId user
       ]
     }
   ];
@@ -102,14 +125,14 @@ async function main() {
       await ProjectMemberModel.insertMany(membershipDocs);
     }
 
-    // simple-git 저장소 준비
-    const repoPath = await git.ensureRepo(project._id.toString());
-    if (!project.repoPath) {
-      project.repoPath = repoPath;
-      await project.save();
-    }
+    // // simple-git 저장소 준비
+    // const repoPath = await git.ensureRepo(project._id.toString());
+    // if (!project.repoPath) {
+    //   project.repoPath = repoPath;
+    //   await project.save();
+    // }
 
-    projectDocs.push(project);
+    // projectDocs.push(project);
   }
 
   // 3) 파일/버전/프리뷰/롤백 더미 생성
@@ -128,14 +151,14 @@ async function main() {
       fs.writeFileSync(absFile, meta.content);
 
       // git commit
-      const author = userDocs['owner@example.com'];
-      const { commitId } = await git.addAndCommit(
-        project._id.toString(),
-        absFile,
-        meta.path,
-        `seed: add ${meta.path}`,
-        { name: author?.name, email: author?.email }
-      );
+      // const author = userDocs['owner@example.com'];
+      // const { commitId } = await git.addAndCommit(
+      //   project._id.toString(),
+      //   absFile,
+      //   meta.path,
+      //   `seed: add ${meta.path}`,
+      //   { name: author?.name, email: author?.email }
+      // );
 
       // 파일/버전 문서 생성
       let fileDoc = await FileModel.findOne({ projectId: project._id, path: meta.path });
@@ -143,29 +166,29 @@ async function main() {
         fileDoc = await FileModel.create({ projectId: project._id, path: meta.path });
       }
 
-      const version = await VersionModel.create({
-        projectId: project._id,
-        fileId: fileDoc._id,
-        commitId,
-        parentCommitIds: [],
-        branch: 'main',
-        message: `seed: add ${meta.path}`,
-        authorId: author?._id,
-        status: 'approved',
-        review: {
-          requiredApprovals: 1,
-          approvals: [{
-            userId: author?._id,
-            decision: 'approve',
-            comment: 'auto-approved',
-            at: new Date()
-          }]
-        },
-        artifacts: {
-          storageKey: path.join(git.getRepoPath(project._id.toString()), meta.path),
-          previewUrl: absFile
-        }
-      });
+      // const version = await VersionModel.create({
+      //   projectId: project._id,
+      //   fileId: fileDoc._id,
+      //   commitId,
+      //   parentCommitIds: [],
+      //   branch: 'main',
+      //   message: `seed: add ${meta.path}`,
+      //   authorId: author?._id,
+      //   status: 'approved',
+      //   review: {
+      //     requiredApprovals: 1,
+      //     approvals: [{
+      //       userId: author?._id,
+      //       decision: 'approve',
+      //       comment: 'auto-approved',
+      //       at: new Date()
+      //     }]
+      //   },
+      //   artifacts: {
+      //     storageKey: path.join(git.getRepoPath(project._id.toString()), meta.path),
+      //     previewUrl: absFile
+      //   }
+      // });
 
       await FileModel.findByIdAndUpdate(fileDoc._id, { latestVersionId: version._id });
 

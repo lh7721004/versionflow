@@ -62,7 +62,6 @@ export function VersionPolicy() {
                 <SelectItem value="v{major}.{minor}">v{'{major}'}.{'{minor}'} (예: v1.0)</SelectItem>
                 <SelectItem value="v{major}.{minor}.{patch}">v{'{major}'}.{'{minor}'}.{'{patch}'} (예: v1.0.0)</SelectItem>
                 <SelectItem value="{year}.{month}.{version}">{'{year}'}.{'{month}'}.{'{version}'} (예: 2024.10.1)</SelectItem>
-                <SelectItem value="{custom}">커스텀</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
@@ -125,108 +124,7 @@ export function VersionPolicy() {
         </CardContent>
       </Card>
 
-      {/* Commit Rules */}
-      <Card>
-        <CardHeader>
-          <CardTitle>커밋 규칙</CardTitle>
-          <CardDescription>문서 커밋 시 필수 요구사항을 설정합니다</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>변경 이력 필수</Label>
-              <p className="text-sm text-muted-foreground">
-                커밋 메시지 작성을 필수로 합니다
-              </p>
-            </div>
-            <Switch checked={changelogRequired} onCheckedChange={setChangelogRequired} />
-          </div>
 
-          <Separator />
-
-          <div className="space-y-2">
-            <Label htmlFor="naming">버전 네이밍 규칙</Label>
-            <Textarea
-              id="naming"
-              placeholder="예: [문서타입] 변경내용&#10;- 신규: 새로운 문서 추가&#10;- 수정: 기존 문서 수정&#10;- 삭제: 문서 삭제"
-              value={versionNaming}
-              onChange={(e) => setVersionNaming(e.target.value)}
-              rows={5}
-            />
-            <p className="text-sm text-muted-foreground">
-              팀원들이 따라야 할 커밋 메시지 작성 규칙을 설명합니다
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Branch Strategy */}
-      <Card>
-        <CardHeader>
-          <CardTitle>브랜치 전략</CardTitle>
-          <CardDescription>문서 작업 브랜치 전략을 설정합니다</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex items-start gap-2">
-              <Info className="w-5 h-5 text-primary mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-sm">
-                  <span className="text-primary">main</span> - 승인 완료된 최종 버전
-                </p>
-                <p className="text-sm">
-                  <span className="text-[#3DBE8B]">develop</span> - 개발/작성 중인 버전
-                </p>
-                <p className="text-sm">
-                  <span className="text-[#F5A524]">feature/*</span> - 개별 작업 브랜치
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="branch">기본 브랜치 전략</Label>
-            <Select defaultValue="gitflow">
-              <SelectTrigger id="branch">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gitflow">Git Flow (main/develop/feature)</SelectItem>
-                <SelectItem value="trunk">Trunk-based (main only)</SelectItem>
-                <SelectItem value="custom">커스텀</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Retention Policy */}
-      <Card>
-        <CardHeader>
-          <CardTitle>보관 정책</CardTitle>
-          <CardDescription>문서 버전 보관 기간을 설정합니다</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="retention">버전 보관 기간</Label>
-            <Select defaultValue="unlimited">
-              <SelectTrigger id="retention">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30일</SelectItem>
-                <SelectItem value="90">90일</SelectItem>
-                <SelectItem value="180">6개월</SelectItem>
-                <SelectItem value="365">1년</SelectItem>
-                <SelectItem value="unlimited">무제한</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">
-              오래된 버전은 자동으로 아카이브됩니다
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

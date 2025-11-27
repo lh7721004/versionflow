@@ -17,8 +17,9 @@ export class FileRepository {
     return this.model.findOne({ projectId, path });
   }
 
-  async listByProject(projectId, { page = 1, limit = 20, sort = 'path' } = {}) {
+  async listByProject(projectId, { page = 1, limit = 20, sort = 'path', folderId } = {}) {
     const query = { projectId };
+    if (folderId) query.folderId = folderId;
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       this.model.find(query).sort(sort).skip(skip).limit(limit),
@@ -51,4 +52,3 @@ export class FileRepository {
     }, {});
   }
 }
-

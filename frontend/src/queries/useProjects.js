@@ -15,7 +15,7 @@ export function useMyProjects(params = {}) {
   return useQuery({
     queryKey: ["projects", "me", params],
     queryFn: async () => {
-      const res = await api.get("/projects/me", { params });
+      const res = await api.get("/projects/me?includeTree=true", { params });
       return res.data?.data; // { owned, member }
     },
   });
@@ -27,6 +27,21 @@ export function useProject(id) {
     enabled: !!id,
     queryFn: async () => {
       const res = await api.get(`/projects/${id}`);
+      return res.data?.data;
+    },
+  });
+}
+export async function fetchFolder(projectId){
+  const res = await api.get(`/projects/${projectId}/folders`);
+  return res.data?.data;
+}
+
+export function useFolder(projectId) {
+  return useQuery({
+    queryKey: ["projectId", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const res = await api.get(`/projects/${projectId}/folders`);
       return res.data?.data;
     },
   });

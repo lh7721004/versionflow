@@ -175,12 +175,6 @@ export function ProjectDetail({
 
   return (
     <div className="flex h-full">
-      {/* File Tree Sidebar */}
-      <div className="w-80 border-r bg-card p-4 overflow-y-auto">
-        <h3 className="mb-4">파일 구조</h3>
-        <div className="space-y-1">{renderFileTree(fileTree)}</div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
@@ -205,14 +199,6 @@ export function ProjectDetail({
             </div>
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => onNavigateToEditor(selectedFile)}
-              >
-                <FileText className="w-4 h-4" />
-                편집
-              </Button>
               <Button
                 variant="outline"
                 className="gap-2"

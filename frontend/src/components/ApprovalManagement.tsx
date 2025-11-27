@@ -37,6 +37,7 @@ interface CommitRequest {
 
 export function ApprovalManagement() {
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
+  const [commitMessage, setCommitMessage] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -284,8 +285,9 @@ GET /api/v1/payments?order_id={order_id}
     setShowPreviewDialog(true);
   };
 
-  const handleApprove = (commitId: string) => {
+  const handleApprove = (commitId: string,commitMessage: string) => {
     const commit = commitRequests.find((c) => c.id === commitId);
+    
     setCommitRequests((prev) =>
       prev.map((req) =>
         req.id === commitId ? { ...req, status: 'approved' as const } : req
@@ -500,7 +502,12 @@ GET /api/v1/payments?order_id={order_id}
                               </div>
                               {getStatusBadge(commit.status)}
                             </div>
-
+                            <div className="bg-muted/50 rounded p-2 mb-3">
+                              <div className="flex items-start gap-2">
+                                <MessageSquare className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                <p className="text-sm">{commit.commitMessage}</p>
+                              </div>
+                            </div>
                             <div className="flex items-center gap-2">
                               <Avatar className="w-6 h-6">
                                 <AvatarFallback className="bg-muted text-muted-foreground text-xs">
@@ -580,9 +587,9 @@ GET /api/v1/payments?order_id={order_id}
                 </div>
 
                 {/* 미리보기 콘텐츠 */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-scroll">
                   <ScrollArea className="h-full">
-                    <div className="pr-4">
+                    <div className="pr-4 flex flex-col gap-2">
                       <div className="bg-white rounded-lg border p-6 shadow-sm">
                         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
                           <Eye className="w-4 h-4" />
@@ -600,24 +607,35 @@ GET /api/v1/payments?order_id={order_id}
                 </div>
 
                 {/* 승인/반려 버튼 */}
-                <div className="flex gap-3 pt-2 border-t">
-                  <Button
-                    className="flex-1"
-                    variant="outline"
-                    onClick={() => handleReject(selectedCommitData.id)}
-                    disabled={selectedCommitData.status !== 'pending'}
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    반려
-                  </Button>
-                  <Button
-                    className="flex-1 bg-[#3DBE8B] hover:bg-[#35a879] text-white"
-                    onClick={() => handleApprove(selectedCommitData.id)}
-                    disabled={selectedCommitData.status !== 'pending'}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    승인
-                  </Button>
+                <div className='flex flex-col gap-2'>
+                  
+                  <div className='flex flex-col w-full text-center p-1'>
+                    <input 
+                      className='rounded-sm p-2 border-1 border-[#DFDFDF] border-[2px]'
+                      placeholder='승인 메시지를 입력하세요.'
+                      value={commitMessage as string}
+                      onChange={(e)=>{setCommitMessage(e.target.value)}}
+                      />
+                  </div>
+                  <div className="flex gap-3 pt-2 border-t">
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => handleReject(selectedCommitData.id)}
+                      disabled={selectedCommitData.status !== 'pending'}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      반려
+                    </Button>
+                    <Button
+                      className="flex-1 bg-[#3DBE8B] hover:bg-[#35a879] text-white"
+                      onClick={() => handleApprove(selectedCommitData.id,commitMessage as string)}
+                      disabled={selectedCommitData.status !== 'pending'}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      승인
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>

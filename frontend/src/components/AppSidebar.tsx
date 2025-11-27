@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Home, Settings, Folder, Users, ChevronRight, ChevronDown, FolderOpen, File, Upload, ClipboardCheck } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { useProjects } from '../queries/useProjects';
+import { useMyProjects } from '../queries/useProjects';
+import { useAsyncError } from 'react-router-dom';
 
 interface MenuItem {
   id: string;
@@ -8,12 +11,157 @@ interface MenuItem {
   icon: any;
 }
 
-interface ProjectNode {
+export interface ProjectVersioningSettings {
+  reviewRequired: boolean;
+  minApprovals: number;
+  allowedFileTypes: string[];
+  autoMergeOnApproval: boolean;
+}
+
+export interface ProjectSettings {
+  versioning: ProjectVersioningSettings;
+}
+
+export interface ProjectApiItem {
+  _id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  status: string;
+  members: {
+    userId: string;
+    role: string;
+    joinedAt: string;
+    _id: string;
+  }[];
+  settings: ProjectSettings;
+  createdAt: string;
+  updatedAt: string;
+  repoPath: string;
+  __v: number;
+}
+
+// ========================================
+// 1) API에서 내려오는 타입들 (필요한 것만)
+// ========================================
+
+type ApiChildNodeType = "config" | "folder" | "file";
+
+interface ApiChildNode {
   id: string;
   name: string;
-  type: 'project' | 'folder' | 'file' | 'config';
+  type: ApiChildNodeType;
+  path?: string;
+  children?: ApiChildNode[];
+}
+
+interface ApiProjectItem {
+  _id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  status: string;
+  members: any[];
+  settings: {
+    versioning: {
+      reviewRequired: boolean;
+      minApprovals: number;
+      allowedFileTypes: string[];
+      autoMergeOnApproval: boolean;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  repoPath: string;
+  children?: ApiChildNode[];
+}
+
+// ① axios 응답이 { data: { items: [...] } } 인 경우
+interface WrappedProjectsResponse {
+  data: {
+    items: ApiProjectItem[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+// ② useQuery에서 data가 이미 { items: [...] } 인 경우
+interface PlainProjectsResponse {
+  items: ApiProjectItem[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+// 둘 다 받을 수 있도록 유니온 타입
+type ProjectsResponseLike = WrappedProjectsResponse | PlainProjectsResponse;
+
+// ========================================
+// 2) 프론트에서 쓰는 트리 타입
+// ========================================
+
+export type ProjectNodeType = "project" | "config" | "folder" | "file";
+
+export interface ProjectNode {
+  id: string;
+  name: string;
+  type: ProjectNodeType;
+  path?: string;
   children?: ProjectNode[];
 }
+
+// ========================================
+// 3) children 재귀 매핑
+// ========================================
+
+function mapChildNode(apiNode: ApiChildNode): ProjectNode {
+  return {
+    id: apiNode.id,
+    name: apiNode.name,
+    type: apiNode.type,
+    path: apiNode.path,
+    children: apiNode.children?.map(mapChildNode),
+  };
+}
+
+// ========================================
+// 4) 최상단 projects → ProjectNode[] 매핑
+//    (undefined 방어 + 응답 shape 2종 모두 지원)
+// ========================================
+
+export function mapProjectsToNodes(
+  response?: ProjectsResponseLike
+): ProjectNode[] {
+  if (!response) return [];
+
+  // 응답이 { data: { items: [...] } } 인 경우
+  //       { items: [...] } 인 경우 둘 다 처리
+  const items: ApiProjectItem[] =
+    "data" in response
+      ? response.data?.items ?? []
+      : response.items ?? [];
+
+  return items.map<ProjectNode>((project) => {
+    const projectId = `project/${project._id}`;
+
+    return {
+      id: projectId,
+      name: project.name,
+      type: "project",
+      children: [
+        { id: `${projectId}/admin`, name: '관리자 설정', type: 'config' },
+        { id: `${projectId}/version`, name: '버전 관리 정책', type: 'config' },
+        ...(project.children?.map(mapChildNode) ?? []),
+      ],
+    };
+  });
+}
+
+
 
 interface AppSidebarProps {
   currentPage: string;
@@ -26,6 +174,7 @@ interface AppSidebarProps {
   onApprovalManagementClick?: () => void;
 }
 
+
 export function AppSidebar({ 
   currentPage, 
   isVisible,
@@ -36,6 +185,7 @@ export function AppSidebar({
   onApprovalClick,
   onApprovalManagementClick
 }: AppSidebarProps) {
+  
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['my-projects', 'participating-projects']);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; folderId: string; folderName: string } | null>(null);
 
@@ -47,7 +197,7 @@ export function AppSidebar({
   ];
 
   // 예시 프로젝트 데이터 - 트리 구조
-  const myProjects: ProjectNode[] = [
+  const myProjectss: ProjectNode[] = [
     {
       id: 'project-1',
       name: 'ERP 시스템 개발',
@@ -62,6 +212,15 @@ export function AppSidebar({
           children: [
             { id: 'project/1/doc/1', name: '기능명세서.docx', type: 'file' },
             { id: 'project/1/doc/2', name: '화면설계.pdf', type: 'file' },
+            {
+              id: 'project/1/folder/2',
+              name: '요구사항',
+              type: 'folder',
+              children: [
+                { id: 'project/1/doc/1', name: '기능명세서.docx', type: 'file' },
+                { id: 'project/1/doc/2', name: '화면설계.pdf', type: 'file' },
+              ],
+            },
           ],
         },
         {
@@ -108,7 +267,7 @@ export function AppSidebar({
     },
   ];
 
-  const participatingProjects: ProjectNode[] = [
+  const participatingProjectsd: ProjectNode[] = [
     {
       id: 'project/4',
       name: 'HR 정책 문서',
@@ -140,6 +299,21 @@ export function AppSidebar({
     },
   ];
 
+  const {data,isLoading,isError} = useProjects({limit:20,offset:0});
+  const {data:meProjects,isLoading:isMeProjectsLoading,isError:isMeProjectsError} = useMyProjects({limit:20,offset:0});
+  const myProjects: ProjectNode[] = mapProjectsToNodes(data);
+  const participatingProjects: ProjectNode[] = mapProjectsToNodes(meProjects);
+
+  // const [apiData, setApiData] = useState<ProjectApi | undefined>(data);
+  // const [myProjects,setTestData] = useState<ProjectNode[]>(apiData!=undefined?mapProjectsToNodes(apiData):[]);
+  useEffect(()=>{
+    console.log("data");
+    console.log(data);
+  },[data])
+  useEffect(()=>{
+    console.log("myProjects");
+    console.log(myProjects);
+  },[myProjects])
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) =>
       prev.includes(folderId)

@@ -97,11 +97,11 @@ export default function App() {
   // -----------------------
   const handleNavigateToProject = (projectId: string) => {
     // 나중에 /projects/:projectId 로 바꾸고 싶으면 여기서 처리
-    navigate('/project-detail');
+    navigate(`/project/${projectId}`);
   };
 
-  const handleNavigateToEditor = (docId: string) => {
-    navigate('/editor');
+  const handleNavigateToPreview = (docId: string) => {
+    navigate('/preview');
   };
 
   const handleNavigateToApproval = (docId: string) => {
@@ -113,7 +113,7 @@ export default function App() {
   };
 
   const handleBack = () => {
-    navigate('/project-detail');
+    navigate(-1);
   };
 
   const handleCommit = () => {
@@ -127,15 +127,15 @@ export default function App() {
 
   const handleBackFromVersions = () => {
     setSelectedDocument(null);
-    navigate('/project-detail');
+    navigate(-1);
   };
 
   const handleViewVersion = (versionId: string) => {
-    navigate('/editor');
+    navigate('/preview');
   };
 
   const handleEditVersion = (versionId: string) => {
-    navigate('/editor');
+    navigate('/preview');
   };
 
   const handleCompareVersion = (versionId: string) => {
@@ -227,7 +227,7 @@ export default function App() {
               path="/project-detail"
               element={
                 <ProjectDetail
-                  onNavigateToEditor={handleNavigateToEditor}
+                  onNavigateToEditor={handleNavigateToPreview}
                   onNavigateToApproval={handleNavigateToApproval}
                   onNavigateToHistory={handleNavigateToHistory}
                 />
@@ -270,7 +270,7 @@ export default function App() {
 
             {/* 에디터 / 승인 / 히스토리 */}
             <Route
-              path="/editor"
+              path="/preview"
               element={<DocumentEditor onBack={handleBack} onCommit={handleCommit} />}
             />
             <Route
@@ -330,8 +330,8 @@ export default function App() {
 
             {/* 관리용 페이지 */}
             <Route path="/approval-management" element={<ApprovalManagement />} />
-            <Route path="/admin/:id" element={<AdminSettings />} />
-            <Route path="/version-policy" element={<VersionPolicy />} />
+            <Route path="/project/:id/admin" element={<AdminSettings />} />
+            <Route path="/project/:id/version" element={<VersionPolicy />} />
 
             {/* 잘못된 주소 → 대시보드로 */}
             {/* <Route path="*" element={<Navigate to="/sdf" replace />} /> */}

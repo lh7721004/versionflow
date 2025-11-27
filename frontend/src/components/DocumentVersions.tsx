@@ -181,13 +181,7 @@ export function DocumentVersions({
                     <Eye className="h-4 w-4 mr-2" />
                     보기
                   </Button>
-                  <Button
-                    onClick={() => onEditVersion(currentVersion.id)}
-                    variant="outline"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    편집
-                  </Button>
+
                 </div>
               </div>
             </CardContent>

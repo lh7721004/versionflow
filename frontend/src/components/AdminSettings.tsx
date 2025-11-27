@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams } from "react-router-dom";
 import { UserPlus, Settings, Mail, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -38,6 +39,7 @@ interface User {
 }
 
 export function AdminSettings() {
+  const { id } = useParams();
   const [users, setUsers] = useState([
     {
       id: '1',

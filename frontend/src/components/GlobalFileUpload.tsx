@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -20,6 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useProjects } from '../queries/useProjects';
 
 interface UploadedFile {
   id: string;
@@ -33,6 +34,10 @@ interface GlobalFileUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+interface ProjectData {
+  id: string;
+  name: string;
+}
 
 export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState([] as (UploadedFile[]));
@@ -40,6 +45,7 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const { data: projectData, isLoading: isProjectLoading, isError: isProjectError } = useProjects({limit:0,offset:0});
 
   // 목업 프로젝트 데이터
   const projects = [
@@ -73,6 +79,11 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
       { id: 'folder-4-3', name: '교육', path: '/교육' },
     ],
   };
+  useEffect(()=>{
+    console.log(projectData);
+    console.log(projects);
+    console.log(projectFolders);
+  },[projectData])
 
   // 선택된 프로젝트의 폴더 목록
   const availableFolders = selectedProject ? projectFolders[selectedProject] || [] : [];

@@ -3,6 +3,8 @@ import {
   createProject,
   getProject,
   listProjects,
+  listProjectsByUserId,
+  listProjectFolders,
   updateProject,
   addProjectMember,
   removeProjectMember,
@@ -55,11 +57,17 @@ const r = Router();
  *       - in: query
  *         name: limit
  *         schema: { type: integer }
+ *       - in: query
+ *         name: includeTree
+ *         schema: { type: boolean }
+ *         description: true일 경우 children(폴더/파일 트리) 포함
  *     responses:
  *       200: { description: 프로젝트 페이지 }
  */
 r.post('/', validate(['name', 'ownerId']), createProject);
 r.get('/me', listMyProjects);
+r.get('/user/:userId', listProjectsByUserId);
+r.get('/:projectId/folders', listProjectFolders);
 r.get('/', listProjects);
 
 /**
