@@ -3,6 +3,7 @@ import {
   createVersion,
   getVersion,
   listVersions,
+  listVersionHistory,
   updateVersion,
   addVersionApproval,
   setVersionStatus
@@ -56,6 +57,32 @@ const r = Router();
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200: { description: 버전 목록 }
+ * /versions/history:
+ *   get:
+ *     summary: 버전 기록(승인 단계 포함) 조회
+ *     tags: [Versions]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema: { type: string, format: objectId }
+ *       - in: query
+ *         name: fileId
+ *         schema: { type: string, format: objectId }
+ *       - in: query
+ *         name: branch
+ *         schema: { type: string }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: 버전 기록 목록 (author, approvals 포함) }
  */
 r.post(
   '/',
@@ -64,6 +91,7 @@ r.post(
   createVersion
 );
 r.get('/', listVersions);
+r.get('/history', listVersionHistory);
 r.get('/:id', validateObjectId(['id']), getVersion);
 r.patch('/:id', validateObjectId(['id']), updateVersion);
 

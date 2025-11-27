@@ -10,7 +10,10 @@ export class VersionRepository {
   }
 
   async findById(id) {
-    return this.model.findById(id);
+    return this.model
+      .findById(id)
+      .populate('authorId', 'name email role')
+      .populate('review.approvals.userId', 'name email role');
   }
 
   async findByCommitId(commitId) {
@@ -26,7 +29,13 @@ export class VersionRepository {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      this.model.find(query).sort(sort).skip(skip).limit(limit),
+      this.model
+        .find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .populate('authorId', 'name email role')
+        .populate('review.approvals.userId', 'name email role'),
       this.model.countDocuments(query)
     ]);
 
@@ -76,4 +85,3 @@ export class VersionRepository {
     }, {});
   }
 }
-

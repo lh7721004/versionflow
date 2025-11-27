@@ -24,6 +24,11 @@ export class VersionService {
     return this.repo.list(params);
   }
 
+  async listHistory(params) {
+    const { sort, ...rest } = params || {};
+    return this.repo.list({ sort: sort || '-createdAt', ...rest });
+  }
+
   async update(id, patch) {
     const updated = await this.repo.updateById(id, patch);
     if (!updated) throw new ApiError(404, 'Version not found');
