@@ -119,6 +119,11 @@ export const removeProjectMember = asyncHandler(async (req, res) => {
   res.json({ data });
 });
 
+export const listProjectMembersDetailed = asyncHandler(async (req, res) => {
+  const data = await projectService.listMembers(req.params.id);
+  res.json({ data });
+});
+
 export const updateProjectMemberRole = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { role } = req.body;

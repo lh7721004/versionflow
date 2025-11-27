@@ -6,7 +6,7 @@ const { Schema, Types: { ObjectId } } = mongoose;
 const VersionSchema = new Schema({
   projectId: { type: ObjectId, ref: 'Project', required: true },
   fileId: { type: ObjectId, ref: 'File' }, // 멀티파일 커밋이면 null
-  commitId: { type: String, unique: true, required: true },
+  commitId: { type: String, required: true, index: true },
   parentCommitIds: [String],
   branch: String,
   message: String,

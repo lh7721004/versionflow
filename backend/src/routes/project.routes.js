@@ -11,7 +11,8 @@ import {
   leaveProject,
   addProjectMember,
   removeProjectMember,
-  updateProjectMemberRole
+  updateProjectMemberRole,
+  listProjectMembersDetailed
 } from '../controllers/project.controller.js';
 import validate from '../middlewares/validate.js';
 import { uploadFileAndCommit } from '../controllers/upload.controller.js';
@@ -145,6 +146,22 @@ r.delete('/:id', deleteProject);
  *       200: { description: 업데이트된 프로젝트 }
  */
 r.patch('/:id/settings/versioning', updateProjectVersioning);
+/**
+ * @swagger
+ * /projects/{id}/members:
+ *   get:
+ *     summary: 프로젝트 멤버 조회 (유저 정보 포함)
+ *     tags: [Projects]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: 멤버 목록 }
+ */
+r.get('/:id/members', listProjectMembersDetailed);
 /**
  * @swagger
  * /projects/{id}/leave:

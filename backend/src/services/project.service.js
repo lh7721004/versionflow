@@ -114,6 +114,12 @@ export class ProjectService {
     return updated;
   }
 
+  async listMembers(projectId) {
+    const project = await this.repo.findMembers(projectId);
+    if (!project) throw new ApiError(404, 'Project not found');
+    return project.members || [];
+  }
+
   async removeMember(projectId, userId) {
     const updated = await this.repo.removeMember(projectId, userId);
     if (!updated) throw new ApiError(404, 'Project not found');

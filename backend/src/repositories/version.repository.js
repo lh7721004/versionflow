@@ -35,7 +35,9 @@ export class VersionRepository {
         .skip(skip)
         .limit(limit)
         .populate('authorId', 'name email role')
-        .populate('review.approvals.userId', 'name email role'),
+        .populate('review.approvals.userId', 'name email role')
+        .populate('projectId', 'name')
+        .populate('fileId', 'path'),
       this.model.countDocuments(query)
     ]);
 

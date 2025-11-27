@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
 
+const toIdOrUndefined = (v) => (v ? v : undefined);
+
 const UserSchema = new mongoose.Schema({
-  kakaoId: { type: String, unique: true, sparse: true },
-  googleId: { type: String, unique: true, sparse: true },
+  kakaoId: { type: String, unique: true, sparse: true, set: toIdOrUndefined },
+  googleId: { type: String, unique: true, sparse: true, set: toIdOrUndefined },
   email: String,
   name: String,
   role: { type: String, enum: ['user', 'admin'], default: 'user' },

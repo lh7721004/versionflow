@@ -13,6 +13,12 @@ export class ProjectRepository {
     return this.model.findById(id);
   }
 
+  async findMembers(id) {
+    return this.model
+      .findById(id)
+      .populate('members.userId', 'name email avatarUrl role');
+  }
+
   async list({ page = 1, limit = 10, sort = '-createdAt', ownerId, memberUserId, status } = {}) {
     const query = {};
     if (ownerId) query.ownerId = ownerId;

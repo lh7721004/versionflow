@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Home, Settings, Folder, Users, ChevronRight, ChevronDown, FolderOpen, File, Upload, ClipboardCheck, FolderPlus, Trash2 } from 'lucide-react';
 import { Separator } from './ui/separator';
-import { useProjects } from '../queries/useProjects';
-import { useMyProjects } from '../queries/useProjects';
-import { useProjectMembers } from '../queries/useProjects';
+import { useProjects, useMyProjects, useProjectMembers, useCreateFolder, useDeleteProject, useDeleteFolder } from '../queries/useProjects';
 import { useAsyncError } from 'react-router-dom';
 import { useMe } from '../queries/useMe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -236,23 +234,49 @@ export function AppSidebar({
   const {data:meProjects,isLoading:isMeProjectsLoading,isError:isMeProjectsError} = useMyProjects({limit:20,offset:0});
   const {data:me,isLoading:isMeLoading,isError:isMeError} = useMe();
   const {data:meMemberProjects,isLoading:isMeMemberProjectsLoading,isError:isMeMemberProjectsError} = useProjectMembers((me as any)?.id||"");
+  const createFolderMutation = useCreateFolder();
+  const deleteProjectMutation = useDeleteProject();
+  const deleteFolderMutation = useDeleteFolder();
+
+  const currentUserId = (me as any)?.data?._id || (me as any)?._id;
 
   const myProjects: ProjectNode[] = mapProjectsToNodes(data);
   const participatingProjects: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.owned:[]);
   const participatingProjects2: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.member:[]);
 
-  const onCreateFolder = (parentId: string, folderName: string) => {
-    // 폴더 생성 로직 구현
-    console.log(`폴더 생성: ${folderName} in ${parentId}`);
-  };
-  
-  const onDeleteNode = (nodeId: string) => {
-    console.log(`노드 삭제: ${nodeId}`);
-    if(nodeId.startsWith('project/')){
-      // 프로젝트 삭제 로직 구현
-      
+  // 현재 유저가 config(관리자 설정/버전 정책)를 볼 수 있는 프로젝트 ID 집합
+  const configAllowedProjectIds = useMemo(() => {
+    const set = new Set<string>();
+    const ownedItems = meProjects?.owned?.items || [];
+    ownedItems.forEach((p: any) => set.add(p._id));
+
+    const memberItems = meProjects?.member?.items || [];
+    memberItems.forEach((p: any) => {
+      const mine = (p.members || []).find((m: any) => (m.userId?._id || m.userId) === currentUserId);
+      if (mine && ['owner', 'maintainer'].includes(mine.role)) {
+        set.add(p._id);
+      }
+    });
+    return set;
+  }, [meProjects, currentUserId]);
+
+  const onDeleteNode = async (nodeId: string) => {
+    const projectId = findProjectIdByNodeId(nodeId);
+    if (nodeId.startsWith('project/')) {
+      const projId = nodeId.split('/')[1] || nodeId;
+      try {
+        await deleteProjectMutation.mutateAsync(projId);
+        toast.success('프로젝트가 삭제되었습니다.');
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error?.message || err?.message || '프로젝트 삭제에 실패했습니다.');
+      }
     } else {
-      // 폴더/파일 삭제 로직 구현
+      try {
+        await deleteFolderMutation.mutateAsync(nodeId);
+        toast.success('폴더가 삭제되었습니다.');
+      } catch (err: any) {
+        toast.error(err?.response?.data?.error?.message || err?.message || '폴더 삭제에 실패했습니다.');
+      }
     }
   };
 
@@ -276,22 +300,62 @@ export function AppSidebar({
     }
   };
 
+  function findProjectIdByNodeId(nodeId: string): string | undefined {
+    const search = (nodes: ProjectNode[], currentProjectId?: string): string | undefined => {
+      for (const n of nodes) {
+        const projId = n.type === 'project' ? (n.id.split('/')[1] || n.id) : currentProjectId;
+        if (n.id === nodeId) return projId;
+        if (n.children) {
+          const found = search(n.children, projId);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    return (
+      search(participatingProjects, undefined) ||
+      search(participatingProjects2, undefined) ||
+      search(myProjects, undefined)
+    );
+  }
+
+  const onCreateFolder = (parentId: string, folderName: string) => {
+    const projectId = findProjectIdByNodeId(parentId);
+    const parentFolderId = parentId.startsWith('project/') ? undefined : parentId;
+    if (!projectId) {
+      toast.error('프로젝트 정보를 찾을 수 없습니다.');
+      return;
+    }
+    createFolderMutation.mutate(
+      { projectId, name: folderName, parentFolderId },
+      {
+        onSuccess: () => {
+          toast.success('폴더가 생성되었습니다.');
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.error?.message || err?.message || '폴더 생성에 실패했습니다.');
+        }
+      }
+    );
+  };
+
   const handleCloseContextMenu = () => {
     setContextMenu(null);
   };
 
   const renderProjectTree = (node: ProjectNode, level: number = 0, treeKey: string) => {
-    const isExpanded = expandedFolders.includes(node.id+'-'+treeKey);
-    const isSelected = currentPage === node.id;
+    const isExpanded = expandedFolders.includes(node.id+'/'+treeKey);
+    const isSelected = currentPage === node.id+'/'+treeKey;
+    const projectId = node.id.startsWith('project/') ? node.id.split('/')[1] : node.id.split('/')[1] || node.id;
 
     if (node.type === 'project' || node.type === 'folder') {
       return (
         <div key={node.id}>
           <button
             onClick={() => {
-              toggleFolder(node.id+'-'+treeKey);
+              toggleFolder(node.id+'/'+treeKey);
               if (node.type === 'project') {
-                onNavigate(node.id+'-'+treeKey);
+                onNavigate(node.id+'/'+treeKey);
               }
             }}
             onContextMenu={(e) => handleContextMenu(e, node)}
@@ -319,6 +383,10 @@ export function AppSidebar({
       );
     }
 
+    if (node.type === 'config' && !configAllowedProjectIds.has(projectId)) {
+      return null;
+    }
+
     return (
       <button
         key={node.id}
@@ -326,7 +394,7 @@ export function AppSidebar({
           if (node.type === 'file' && onDocumentClick) {
             onDocumentClick(node.name, node.id);
           } else {
-            onNavigate(node.id);
+            onNavigate(node.id+'/'+treeKey);
           }
         }}
         className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left transition-colors ${
@@ -520,7 +588,6 @@ export function AppSidebar({
                     toast.error('관리자 설정 및 버전 관리 정책 파일은 삭제할 수 없습니다.');
                   } else {
                     onDeleteNode(nodeToDelete.id);
-                    toast.success(`${nodeToDelete.name}이(가) 삭제되었습니다.`);
                   }
                 }
                 setShowDeleteDialog(false);

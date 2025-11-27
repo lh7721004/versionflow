@@ -101,7 +101,7 @@ export default function App() {
   // -----------------------
   const handleNavigateToProject = (projectId: string) => {
     // 나중에 /projects/:projectId 로 바꾸고 싶으면 여기서 처리
-    navigate(`/project/${projectId}`);
+    navigate(`/document-versions/${projectId}`);
   };
 
   const handleNavigateToPreview = (docId: string) => {
@@ -126,7 +126,7 @@ export default function App() {
 
   const handleDocumentClick = (documentName: string, documentId: string) => {
     setSelectedDocument({ name: documentName, id: documentId });
-    navigate('/document-versions');
+    navigate(`/document-versions/${documentId}`);
   };
 
   const handleBackFromVersions = () => {
@@ -135,7 +135,7 @@ export default function App() {
   };
 
   const handleViewVersion = (versionId: string) => {
-    navigate('/preview');
+    navigate(`/document-versions/${versionId}`);
   };
 
   const handleEditVersion = (versionId: string) => {
@@ -245,7 +245,7 @@ export default function App() {
 
             {/* 문서 버전 목록 */}
             <Route
-              path="/document-versions"
+              path="/document-versions/:docId"
               element={
                 selectedDocument ? (
                   <DocumentVersions
@@ -256,7 +256,7 @@ export default function App() {
                     onCompareVersion={handleCompareVersion}
                   />
                 ) : (
-                  <Navigate to="/project-detail" replace />
+                  <Navigate to="/dashboard" replace />
                 )
               }
             />
@@ -272,14 +272,14 @@ export default function App() {
                     onBack={handleBackFromUpload}
                   />
                 ) : (
-                  <Navigate to="/project-detail" replace />
+                  <Navigate to="/dashboard" replace />
                 )
               }
             />
 
             {/* 에디터 / 승인 / 히스토리 */}
             <Route
-              path="/preview"
+              path="/preview/:docId"
               element={<DocumentEditor onBack={handleBack} onCommit={handleCommit} />}
             />
             <Route
@@ -328,8 +328,8 @@ export default function App() {
             />
             {/* 관리용 페이지 */}
             <Route path="/approval-management" element={<ApprovalManagement />} />
-            <Route path="/project/:id/admin" element={<AdminSettings />} />
-            <Route path="/project/:id/version" element={<VersionPolicy />} />
+            <Route path="/project/:id/admin/:treeKey" element={<AdminSettings />} />
+            <Route path="/project/:id/version/:treeKey" element={<VersionPolicy />} />
 
             {/* 잘못된 주소 → 대시보드로 */}
             {/* <Route path="*" element={<Navigate to="/sdf" replace />} /> */}

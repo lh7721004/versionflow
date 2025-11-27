@@ -14,6 +14,9 @@ export function useInvitations(params = {}) {
 export function useCreateInvitation() {
   const qc = useQueryClient();
   return useMutation({
+    /** 
+     * @param {{projectId:string, inviterId:string, inviteeEmail:string, role:'owner'|'maintainer'|'member', expiresAt?:string, token?:string}} payload 
+     */
     mutationFn: async (payload) => {
       const res = await api.post("/invitations", payload);
       return res.data?.data;

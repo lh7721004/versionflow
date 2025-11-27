@@ -21,9 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
-import { useProjects, useMyProjects, fetchFolder } from '../queries/useProjects';
+import { useProjects, useMyProjects } from '../queries/useProjects';
 import { useCreateProject } from '../queries/useProjectMutations';
 import { useMe } from '../queries/useMe';
+import { useVersions } from '../queries/useVersions';
 
 interface DashboardProps {
   onNavigateToProject: (projectId: string) => void;
@@ -250,48 +251,20 @@ export function Dashboard({ onNavigateToProject }: DashboardProps) {
   // const [simpleProjects,setSimpleProjects] = useState(mapToSimpleProjects(myProjectData?.owned)||null);
   // const [simpleProjects2,setSimpleProjects2] = useState(mapToSimpleProjects(myProjectData?.member)||null);
   // const [myFolders, setMyFolders] = 
-  const documents: Document[] = [
-    {
-      id: '1',
-      name: '2025 사업계획서',
-      version: 'v4.2',
-      status: 'approved',
-      lastModifiedBy: '김철수',
-      lastModifiedDate: '2025-10-28',
-      projectId: 'project-1',
-    },
-    {
-      id: '2',
-      name: '시스템 아키텍처 설계서',
-      version: 'v2.0',
-      status: 'pending',
-      lastModifiedBy: '이영희',
-      lastModifiedDate: '2025-10-27',
-      projectId: 'project-2',
-    },
-    {
-      id: '3',
-      name: '고객 요구사항 명세서',
-      version: 'v1.3',
-      status: 'rejected',
-      lastModifiedBy: '박민수',
-      lastModifiedDate: '2025-10-26',
-      projectId: 'project-1',
-    },
-    {
-      id: '4',
-      name: 'API 문서',
-      version: 'v3.1',
-      status: 'approved',
-      lastModifiedBy: '정수진',
-      lastModifiedDate: '2025-10-25',
-      projectId: 'project-3',
-    },
-  ];
-  const [rejectedCount,setRejectedCount] = useState(12);
-  const [pendingCount,setPendingCount] = useState(5);
-  const [recentApprovedCount,setRecentApprovedCount] = useState(28);
-  const [recentCommitCount,setRecentCommitCount] = useState(8);
+  const { data: versionsData } = useVersions({ limit: 10, sort: '-createdAt' });
+  const documents: Document[] = (versionsData?.items || []).map((v: any) => ({
+    id: v._id,
+    name: v.fileId?.path?.split('/')?.pop() || v.commitId,
+    version: v.commitId,
+    status: v.status === 'rejected' ? 'rejected' : v.status === 'approved' ? 'approved' : 'pending',
+    lastModifiedBy: v.authorId?.name || '작성자',
+    lastModifiedDate: v.createdAt?.slice(0, 10) || '',
+    projectId: v.projectId?._id || v.projectId || '',
+  }));
+  const [rejectedCount] = useState(documents.filter(d => d.status === 'rejected').length);
+  const [pendingCount] = useState(documents.filter(d => d.status === 'pending').length);
+  const [recentApprovedCount] = useState(documents.filter(d => d.status === 'approved').length);
+  const [recentCommitCount] = useState(documents.length);
   const createProject = useCreateProject();
 
 
@@ -393,7 +366,7 @@ export function Dashboard({ onNavigateToProject }: DashboardProps) {
                 <TableHead>문서명</TableHead>
                 <TableHead>버전</TableHead>
                 <TableHead>상태</TableHead>
-                <TableHead>수정자</TableHead>
+                <TableHead>기여자</TableHead>
                 <TableHead>수정일</TableHead>
               </TableRow>
             </TableHeader>
@@ -401,8 +374,7 @@ export function Dashboard({ onNavigateToProject }: DashboardProps) {
                 {documents.map((doc) => (
                   <TableRow
                     key={doc.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => onNavigateToProject(doc.projectId)}
+                    className="hover:bg-muted/50"
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -58,6 +58,14 @@ export class UploadService {
       authorProfile
     );
 
+    const repoBaseUrl = process.env.BACKEND_ORIGIN || `http://localhost:${process.env.PORT || 4000}`;
+    const repoRelPath = path.join(projectId.toString(), relativePath).replace(/\\/g, '/');
+    const previewUrl = `${repoBaseUrl}/static/repos/${repoRelPath}`;
+
+    const reviewRequired = project.settings?.versioning?.reviewRequired !== false;
+    const requiredApprovals = project.settings?.versioning?.minApprovals || 1;
+    const status = reviewRequired ? 'pending_review' : 'approved';
+
     const version = await this.versionRepo.create({
       projectId,
       fileId: fileDoc._id,
@@ -66,10 +74,14 @@ export class UploadService {
       branch,
       message,
       authorId,
-      status: 'pending_review',
+      status,
       artifacts: {
         storageKey: path.join(this.git.getRepoPath(projectId), relativePath),
-        previewUrl: fileMeta.path
+        previewUrl
+      },
+      review: {
+        requiredApprovals,
+        approvals: []
       }
     });
 

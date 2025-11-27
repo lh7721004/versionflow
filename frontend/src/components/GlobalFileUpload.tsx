@@ -20,7 +20,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useFolder, useProjects } from '../queries/useProjects';
+import { useFolder, useProjects, useMyProjects } from '../queries/useProjects';
+import { useMe } from '../queries/useMe';
+import { api } from '../api/api';
 
 interface UploadedFile {
   id: string;
@@ -42,6 +44,96 @@ interface ProjectData {
 interface SelectProject {
   items:ProjectData[];
 }
+type ProjectNodeType = "project" | "config" | "folder" | "file";
+
+interface ProjectNode {
+  id: string;
+  name: string;
+  type: ProjectNodeType;
+  path?: string;
+  children?: ProjectNode[];
+}
+interface WrappedProjectsResponse {
+  data: {
+    items: ApiProjectItem[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+interface PlainProjectsResponse {
+  items: ApiProjectItem[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+type ProjectsResponseLike = WrappedProjectsResponse | PlainProjectsResponse;
+interface ApiProjectItem {
+  _id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  status: string;
+  members: any[];
+  settings: {
+    versioning: {
+      reviewRequired: boolean;
+      minApprovals: number;
+      allowedFileTypes: string[];
+      autoMergeOnApproval: boolean;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  repoPath: string;
+  children?: ApiChildNode[];
+}
+type ApiChildNodeType = "config" | "folder" | "file";
+
+interface ApiChildNode {
+  id: string;
+  name: string;
+  type: ApiChildNodeType;
+  path?: string;
+  children?: ApiChildNode[];
+}
+function mapChildNode(apiNode: ApiChildNode): ProjectNode {
+  return {
+    id: apiNode.id,
+    name: apiNode.name,
+    type: apiNode.type,
+    path: apiNode.path,
+    children: apiNode.children?.map(mapChildNode),
+  };
+}
+function mapProjectsToNodes(
+  response?: ProjectsResponseLike
+): ProjectNode[] {
+  if (!response) return [];
+
+  // 응답이 { data: { items: [...] } } 인 경우
+  //       { items: [...] } 인 경우 둘 다 처리
+  const items: ApiProjectItem[] =
+    "data" in response
+      ? response.data?.items ?? []
+      : response.items ?? [];
+
+  return items.map<ProjectNode>((project) => {
+    return {
+      id: project._id,
+      name: project.name,
+      type: "project",
+      children: [
+        // { id: `${projectId}/admin`, name: '관리자 설정', type: 'config' },
+        // { id: `${projectId}/version`, name: '버전 관리 정책', type: 'config' },
+        ...(project.children?.map(mapChildNode) ?? []),
+      ],
+    };
+  });
+}
 export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState([] as (UploadedFile[]));
   const [commitMessage, setCommitMessage] = useState('');
@@ -49,6 +141,11 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
   const [selectedFolder, setSelectedFolder] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const { data: projectData, isLoading: isProjectLoading, isError: isProjectError } = useProjects({limit:0,offset:0});
+  const {data:meProjects,isLoading:isMeProjectsLoading,isError:isMeProjectsError} = useMyProjects({limit:20,offset:0});
+  const { data: me } = useMe();
+
+  const participatingProjects2: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.member:[]);
+
   const { data: folderData, isLoading: isFolderLoading, isError: isFolderError } = useFolder(selectedProject);
   // // 목업 프로젝트 데이터
   // const projects = [
@@ -89,11 +186,6 @@ const [projects, setProjects] = useState<SelectProject>({
       { id: 'folder-4-3', name: '교육', path: '/교육' },
     ],
   };
-  useEffect(()=>{
-    console.log(projectData);
-    console.log(projects);
-    console.log(projectFolders);
-  },[projectData])
 
   // 선택된 프로젝트의 폴더 목록
   const availableFolders = selectedProject ? projectFolders[selectedProject] || [] : [];
@@ -160,33 +252,6 @@ const [projects, setProjects] = useState<SelectProject>({
     setUploadedFiles((prev: any[]) => prev.filter((f) => f.id !== id));
   };
 
-  const simulateUpload = (fileId: string) => {
-    return new Promise<void>((resolve) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setUploadedFiles((prev: any[]) =>
-          prev.map((f) =>
-            f.id === fileId
-              ? { ...f, status: 'uploading', progress }
-              : f
-          )
-        );
-        if (progress >= 100) {
-          clearInterval(interval);
-          setUploadedFiles((prev: any[]) =>
-            prev.map((f) =>
-              f.id === fileId
-                ? { ...f, status: 'success', progress: 100 }
-                : f
-            )
-          );
-          resolve();
-        }
-      }, 200);
-    });
-  };
-
   const handleCommit = async () => {
     if (uploadedFiles.length === 0) {
       toast.error('업로드할 파일을 선택해주세요.');
@@ -204,19 +269,40 @@ const [projects, setProjects] = useState<SelectProject>({
       toast.error('폴더를 선택해주세요.');
       return;
     }
-    console.log(selectedProject);
     // /projects/:projectId/upload
     // /projects/:projectId/upload
 
     // 모든 파일 업로드 시뮬레이션
-    for (const file of uploadedFiles) {
-      if (file.status === 'pending') {
-        await simulateUpload(file.id);
-      }
+    // for (const file of uploadedFiles) {
+    //   if (file.status === 'pending') {
+    //     await simulateUpload(file.id);
+    //   }
+    // }
+
+    const authorId = (me as any)?.data?.id || (me as any)?.id;
+    if (!authorId) {
+      toast.error('로그인이 필요합니다.');
+      return;
     }
 
-    const projectName = projects.items.find(p => p._id === selectedProject)?.name;
-    toast.success(`${uploadedFiles.length}개 파일이 "${projectName}"에 성공적으로 커밋되었습니다.`);
+    try {
+      for (const f of uploadedFiles) {
+        const form = new FormData();
+        form.append('file', f.file);
+        form.append('authorId', authorId);
+        form.append('message', commitMessage);
+        form.append('folderPath', selectedFolder || '/');
+        await api.post(`/projects/${selectedProject}/upload`, form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+      const projectName = projects.items.find((p: any) => p._id === selectedProject)?.name || selectedProject;
+      toast.success(`${uploadedFiles.length}개 파일이 "${projectName}"에 성공적으로 커밋되었습니다.`);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message || err?.message || '업로드/커밋에 실패했습니다.';
+      toast.error(msg);
+      return;
+    }
     
     // 초기화 및 닫기
     setTimeout(() => {
@@ -236,10 +322,6 @@ const [projects, setProjects] = useState<SelectProject>({
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  useEffect(()=>{
-    console.log("folderData");
-    console.log(folderData);
-  },[folderData])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -374,11 +456,11 @@ const [projects, setProjects] = useState<SelectProject>({
                 <SelectValue placeholder="커밋할 프로젝트를 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                {projects&&projects.items&&projects.items.length!=0?projects.items.map((project) => (
-                  <SelectItem key={project._id} value={project._id}>
+                {participatingProjects2.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
                     {project.name}
                   </SelectItem>
-                )):<></>}
+                ))}
               </SelectContent>
             </Select>
           </div>

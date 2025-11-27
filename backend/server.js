@@ -8,6 +8,7 @@ import { connectDB } from './src/db/index.js';
 import router from './src/routes/index.js';
 import notFound from './src/middlewares/notFound.js';
 import errorHandler from './src/middlewares/errorHandler.js';
+import path from 'path';
 
 loadEnv();
 await connectDB();
@@ -24,6 +25,22 @@ app.use(cors({
 }));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+// serve repositories statically for previews
+const reposPath = path.join(process.cwd(), 'repos');
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+app.use(
+  '/static/repos',
+  (req, res, next) => {
+    // allow embedding from frontend for PDF/video/image previews
+    res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Content-Security-Policy', `frame-ancestors 'self' ${FRONTEND_ORIGIN}`);
+    next();
+  },
+  express.static(reposPath)
+);
+
 app.use('/api', router);
 app.use(notFound);
 app.use(errorHandler);
