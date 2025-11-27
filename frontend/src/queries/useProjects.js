@@ -47,3 +47,13 @@ export function useFolder(projectId) {
   });
 }
 
+export function useProjectMembers(userId) {
+  return useQuery({
+    queryKey: ["projects", userId, "user"],
+    enabled: !!userId,
+    queryFn: async () => {
+      const res = await api.get(`/projects/user/${userId}?includeTree=true`);
+      return res.data?.data;
+    },
+  });
+}

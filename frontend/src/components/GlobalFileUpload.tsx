@@ -20,7 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useProjects } from '../queries/useProjects';
+import { useFolder, useProjects } from '../queries/useProjects';
 
 interface UploadedFile {
   id: string;
@@ -46,15 +46,20 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
   const [selectedFolder, setSelectedFolder] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const { data: projectData, isLoading: isProjectLoading, isError: isProjectError } = useProjects({limit:0,offset:0});
-
-  // 목업 프로젝트 데이터
-  const projects = [
-    { id: 'proj-1', name: '신제품 개발 문서' },
-    { id: 'proj-2', name: '마케팅 캠페인 2024' },
-    { id: 'proj-3', name: '기술 문서' },
-    { id: 'proj-4', name: 'HR 정책 문서' },
-  ];
-
+  const { data: folderData, isLoading: isFolderLoading, isError: isFolderError } = useFolder(selectedProject);
+  // // 목업 프로젝트 데이터
+  // const projects = [
+  //   { id: 'proj-1', name: '신제품 개발 문서' },
+  //   { id: 'proj-2', name: '마케팅 캠페인 2024' },
+  //   { id: 'proj-3', name: '기술 문서' },
+  //   { id: 'proj-4', name: 'HR 정책 문서' },
+  // ];
+  const [projects, setProjects] = useState<any[]>(projectData || []);
+  useEffect(()=>{
+    if(projectData){
+      setProjects(projectData);
+    }
+  },[projectData])
   // 프로젝트별 폴더 구조
   const projectFolders: Record<string, { id: string; name: string; path: string }[]> = {
     'proj-1': [
@@ -223,14 +228,19 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  useEffect(()=>{
+    console.log("folderData");
+    console.log(folderData);
+  },[folderData])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[100vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-[#004B8D]">파일 업로드 및 커밋</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col gap-6 p-1">
+        <div className="flex-1 flex flex-col gap-6 p-1 overflow-y-scroll">
           {/* Step 1: 파일 업로드 영역 */}
           <div>
             <Label className="mb-2 block">1. 파일 선택</Label>
@@ -357,11 +367,11 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
                 <SelectValue placeholder="커밋할 프로젝트를 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
+                {projects&&projects.items&&projects.items.length!=0?projects.items.map((project) => (
+                  <SelectItem key={project._id} value={project._id}>
                     {project.name}
                   </SelectItem>
-                ))}
+                )):<></>}
               </SelectContent>
             </Select>
           </div>
@@ -376,9 +386,17 @@ export function GlobalFileUpload({ open, onOpenChange }: GlobalFileUploadProps) 
                 <SelectValue placeholder="커밋할 폴더를 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                {availableFolders.map((folder) => (
-                  <SelectItem key={folder.id} value={folder.id}>
-                    {folder.name}
+                {[
+                  { path: "/", _id: "root" },
+                  ...(folderData !== undefined
+                    ? folderData.map((folder: any) => ({
+                        path: `/${folder.path}`,
+                        _id: folder.id,
+                      }))
+                    : []),
+                ].map((folder) => (
+                  <SelectItem key={folder._id} value={folder.path}>
+                    {folder.path}
                   </SelectItem>
                 ))}
               </SelectContent>

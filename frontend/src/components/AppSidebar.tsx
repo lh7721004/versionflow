@@ -3,7 +3,9 @@ import { Home, Settings, Folder, Users, ChevronRight, ChevronDown, FolderOpen, F
 import { Separator } from './ui/separator';
 import { useProjects } from '../queries/useProjects';
 import { useMyProjects } from '../queries/useProjects';
+import { useProjectMembers } from '../queries/useProjects';
 import { useAsyncError } from 'react-router-dom';
+import { useMe } from '../queries/useMe';
 
 interface MenuItem {
   id: string;
@@ -153,8 +155,8 @@ export function mapProjectsToNodes(
       name: project.name,
       type: "project",
       children: [
-        { id: `${projectId}/admin`, name: '관리자 설정', type: 'config' },
-        { id: `${projectId}/version`, name: '버전 관리 정책', type: 'config' },
+        // { id: `${projectId}/admin`, name: '관리자 설정', type: 'config' },
+        // { id: `${projectId}/version`, name: '버전 관리 정책', type: 'config' },
         ...(project.children?.map(mapChildNode) ?? []),
       ],
     };
@@ -196,124 +198,15 @@ export function AppSidebar({
     { id: 'settings', label: '설정', icon: Settings },
   ];
 
-  // 예시 프로젝트 데이터 - 트리 구조
-  const myProjectss: ProjectNode[] = [
-    {
-      id: 'project-1',
-      name: 'ERP 시스템 개발',
-      type: 'project',
-      children: [
-        { id: 'project/1/admin', name: '관리자 설정', type: 'config' },
-        { id: 'project/1/version', name: '버전 관리 정책', type: 'config' },
-        {
-          id: 'project/1/folder/1',
-          name: '요구사항',
-          type: 'folder',
-          children: [
-            { id: 'project/1/doc/1', name: '기능명세서.docx', type: 'file' },
-            { id: 'project/1/doc/2', name: '화면설계.pdf', type: 'file' },
-            {
-              id: 'project/1/folder/2',
-              name: '요구사항',
-              type: 'folder',
-              children: [
-                { id: 'project/1/doc/1', name: '기능명세서.docx', type: 'file' },
-                { id: 'project/1/doc/2', name: '화면설계.pdf', type: 'file' },
-              ],
-            },
-          ],
-        },
-        {
-          id: 'project/1/folder/2',
-          name: '설계',
-          type: 'folder',
-          children: [
-            { id: 'project/1/doc/3', name: 'DB설계.xlsx', type: 'file' },
-            { id: 'project/1/doc/4', name: '아키텍처.pdf', type: 'file' },
-          ],
-        },
-        { id: 'project/1/doc/5', name: '프로젝트계획서.docx', type: 'file' },
-      ],
-    },
-    {
-      id: 'project/2',
-      name: '마케팅 캠페인 2024',
-      type: 'project',
-      children: [
-        { id: 'project/2/admin', name: '관리자 설정', type: 'config' },
-        { id: 'project/2/version', name: '버전 관리 정책', type: 'config' },
-        { id: 'project/2/doc/1', name: '캠페인기획안.pptx', type: 'file' },
-        { id: 'project/2/doc/2', name: '예산안.xlsx', type: 'file' },
-        {
-          id: 'project/2/folder/1',
-          name: '디자인',
-          type: 'folder',
-          children: [
-            { id: 'project/2/doc/3', name: '배너디자인.png', type: 'file' },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'project/3',
-      name: '신제품 개발 문서',
-      type: 'project',
-      children: [
-        { id: 'project/3/admin', name: '관리자 설정', type: 'config' },
-        { id: 'project/3/version', name: '버전 관리 정책', type: 'config' },
-        { id: 'project/3/doc/1', name: '제품기획서.docx', type: 'file' },
-        { id: 'project/3/doc/2', name: '시장조사.pdf', type: 'file' },
-      ],
-    },
-  ];
-
-  const participatingProjectsd: ProjectNode[] = [
-    {
-      id: 'project/4',
-      name: 'HR 정책 문서',
-      type: 'project',
-      children: [
-        { id: 'project/4/admin', name: '관리자 설정', type: 'config' },
-        { id: 'project/4/version', name: '버전 관리 정책', type: 'config' },
-        { id: 'project/4/doc/1', name: '근무규정.docx', type: 'file' },
-        { id: 'project/4/doc/2', name: '휴가정책.pdf', type: 'file' },
-      ],
-    },
-    {
-      id: 'project/5',
-      name: '재무 보고서',
-      type: 'project',
-      children: [
-        { id: 'project/5/admin', name: '관리자 설정', type: 'config' },
-        { id: 'project/5/version', name: '버전 관리 정책', type: 'config' },
-        {
-          id: 'project/5/folder/1',
-          name: '2024년',
-          type: 'folder',
-          children: [
-            { id: 'project/5/doc/1', name: '1분기보고서.xlsx', type: 'file' },
-            { id: 'project/5/doc/2', name: '2분기보고서.xlsx', type: 'file' },
-          ],
-        },
-      ],
-    },
-  ];
-
   const {data,isLoading,isError} = useProjects({limit:20,offset:0});
   const {data:meProjects,isLoading:isMeProjectsLoading,isError:isMeProjectsError} = useMyProjects({limit:20,offset:0});
-  const myProjects: ProjectNode[] = mapProjectsToNodes(data);
-  const participatingProjects: ProjectNode[] = mapProjectsToNodes(meProjects);
+  const {data:me,isLoading:isMeLoading,isError:isMeError} = useMe();
+  const {data:meMemberProjects,isLoading:isMeMemberProjectsLoading,isError:isMeMemberProjectsError} = useProjectMembers((me as any)?.id||"");
 
-  // const [apiData, setApiData] = useState<ProjectApi | undefined>(data);
-  // const [myProjects,setTestData] = useState<ProjectNode[]>(apiData!=undefined?mapProjectsToNodes(apiData):[]);
-  useEffect(()=>{
-    console.log("data");
-    console.log(data);
-  },[data])
-  useEffect(()=>{
-    console.log("myProjects");
-    console.log(myProjects);
-  },[myProjects])
+  const myProjects: ProjectNode[] = mapProjectsToNodes(data);
+  const participatingProjects: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.owned:[]);
+  const participatingProjects2: ProjectNode[] = mapProjectsToNodes(meProjects?meProjects.member:[]);
+
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) =>
       prev.includes(folderId)
@@ -345,8 +238,8 @@ export function AppSidebar({
     setContextMenu(null);
   };
 
-  const renderProjectTree = (node: ProjectNode, level: number = 0) => {
-    const isExpanded = expandedFolders.includes(node.id);
+  const renderProjectTree = (node: ProjectNode, level: number = 0, treeKey: string) => {
+    const isExpanded = expandedFolders.includes(node.id+'-'+treeKey);
     const isSelected = currentPage === node.id;
 
     if (node.type === 'project' || node.type === 'folder') {
@@ -354,9 +247,9 @@ export function AppSidebar({
         <div key={node.id}>
           <button
             onClick={() => {
-              toggleFolder(node.id);
+              toggleFolder(node.id+'-'+treeKey);
               if (node.type === 'project') {
-                onNavigate(node.id);
+                onNavigate(node.id+'-'+treeKey);
               }
             }}
             onContextMenu={(e) => handleContextMenu(e, node)}
@@ -480,14 +373,11 @@ export function AppSidebar({
               <ChevronRight className="w-4 h-4" />
             )}
             <Folder className="w-4 h-4 text-primary" />
-            <span className="text-sm">내가 생성한 프로젝트</span>
+            <span className="text-sm">생성한 프로젝트</span>
           </button>
-          {isMyProjectsExpanded && myProjects.map((project) => renderProjectTree(project, 1))}
+          {isMyProjectsExpanded && participatingProjects.map((project) => renderProjectTree(project, 1, 'my'))}
         </div>
-
         <Separator className="my-4" />
-
-        {/* 참여한 프로젝트 */}
         <div className="space-y-1">
           <button
             onClick={() => toggleFolder('participating-projects')}
@@ -498,10 +388,10 @@ export function AppSidebar({
             ) : (
               <ChevronRight className="w-4 h-4" />
             )}
-            <Users className="w-4 h-4 text-primary" />
+            <Folder className="w-4 h-4 text-primary" />
             <span className="text-sm">참여한 프로젝트</span>
           </button>
-          {isParticipatingProjectsExpanded && participatingProjects.map((project) => renderProjectTree(project, 1))}
+          {isParticipatingProjectsExpanded && participatingProjects2.map((project) => renderProjectTree(project, 1, 'participating'))}
         </div>
       </nav>
     </aside>

@@ -38,15 +38,21 @@ export const listProjectFolders = asyncHandler(async (req, res) => {
 });
 
 export const listProjectsByUserId = asyncHandler(async (req, res) => {
-  const { page, limit, sort } = req.query;
+  const { page, limit, sort, includeTree } = req.query;
   const { userId } = req.params;
   if (!userId) throw new ApiError(400, 'userId is required');
 
-  const data = await projectService.listMember(userId, {
+  const params = {
     page: Number(page) || 1,
     limit: Number(limit) || 10,
     sort
-  });
+  };
+
+  const useTree = String(includeTree || '').toLowerCase() === 'true';
+
+  const data = useTree
+    ? await projectService.listWithTree({ ...params, memberUserId: userId })
+    : await projectService.listMember(userId, params);
 
   res.json({ data });
 });
